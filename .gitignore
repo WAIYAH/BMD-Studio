@@ -1,0 +1,38 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# builds
+dist/
+build/
+*.tsbuildinfo
+
+# environment — never commit real secrets
+.env
+.env.*
+!.env.example
+
+# logs
+logs/
+*.log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# test / coverage
+coverage/
+.vitest/
+
+# local data volumes
+.docker-data/
+
+# editors / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# uploads staged locally before object storage
+server/uploads/

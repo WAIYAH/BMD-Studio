@@ -1,0 +1,82 @@
+name: bmd-studio
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: bmd-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bmd}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bmd_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-bmd_studio}
+      TZ: Africa/Nairobi
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - bmd_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-bmd} -d ${POSTGRES_DB:-bmd_studio}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Separate database used by the integration test suite so tests can truncate
+  # freely without touching development data.
+  db-test:
+    image: postgres:16-alpine
+    container_name: bmd-postgres-test
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bmd}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bmd_dev_password}
+      POSTGRES_DB: bmd_studio_test
+      TZ: Africa/Nairobi
+    ports:
+      - '${POSTGRES_TEST_PORT:-5433}:5432'
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-bmd} -d bmd_studio_test']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: bmd-redis
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - bmd_redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # S3-compatible object storage for local development (media files).
+  minio:
+    image: minio/minio:latest
+    container_name: bmd-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-bmd_minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-bmd_minio_dev_password}
+    ports:
+      - '${MINIO_PORT:-9000}:9000'
+      - '${MINIO_CONSOLE_PORT:-9001}:9001'
+    volumes:
+      - bmd_miniodata:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  bmd_pgdata:
+  bmd_redisdata:
+  bmd_miniodata:

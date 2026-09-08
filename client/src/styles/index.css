@@ -1,0 +1,97 @@
+@import 'tailwindcss';
+
+/**
+ * B.M.D Studio design tokens.
+ *
+ * The brand is broadcast-grade: deep navy as the operational ground, a signal
+ * blue for interactive elements, and a single saturated red reserved for ON AIR
+ * and destructive actions. Red is never used decoratively — in a broadcast
+ * facility, red means live.
+ */
+@theme {
+  --color-navy-50: #f1f5fb;
+  --color-navy-100: #dde7f5;
+  --color-navy-200: #bccfe9;
+  --color-navy-300: #8dadd8;
+  --color-navy-400: #5682c1;
+  --color-navy-500: #3562a6;
+  --color-navy-600: #274c89;
+  --color-navy-700: #1f3c6f;
+  --color-navy-800: #12294f;
+  --color-navy-900: #0a2540;
+  --color-navy-950: #05162a;
+
+  --color-signal-50: #eff6ff;
+  --color-signal-100: #dbeafe;
+  --color-signal-200: #bfdbfe;
+  --color-signal-300: #93c5fd;
+  --color-signal-400: #60a5fa;
+  --color-signal-500: #2f6fed;
+  --color-signal-600: #1d54d1;
+  --color-signal-700: #1841a8;
+  --color-signal-800: #173785;
+  --color-signal-900: #17306a;
+
+  --color-onair-50: #fff1f2;
+  --color-onair-100: #ffe0e2;
+  --color-onair-200: #ffc6ca;
+  --color-onair-300: #ff9ba3;
+  --color-onair-400: #fb6470;
+  --color-onair-500: #e11d2e;
+  --color-onair-600: #c81325;
+  --color-onair-700: #a71020;
+  --color-onair-800: #8a121f;
+  --color-onair-900: #74131f;
+
+  --font-sans:
+    'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-display: 'Barlow Condensed', 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 0.75rem;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-white font-sans text-navy-900 antialiased;
+  }
+
+  /* Keyboard focus must stay clearly visible across the whole application. */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-signal-500;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-tight;
+  }
+}
+
+@layer components {
+  /* The ON AIR pulse. Suppressed for viewers who prefer reduced motion. */
+  .onair-pulse {
+    animation: onair-pulse 1.6s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .onair-pulse {
+      animation: none;
+    }
+  }
+}
+
+@keyframes onair-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
