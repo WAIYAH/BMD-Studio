@@ -1,12 +1,16 @@
-import type { Permission, Role } from '@bmd/shared';
+import type { AuthUser } from '@bmd/shared';
 
-/** The authenticated principal, attached by the auth middleware (Phase 3). */
+/** The authenticated principal, attached by `requireAuth`. */
 export interface AuthenticatedUser {
   id: string;
   email: string;
-  roles: Role[];
-  permissions: Permission[];
+  /** Role keys, loaded from the database on this request. */
+  roles: string[];
+  /** Effective permissions, loaded from the database on this request. */
+  permissions: string[];
   sessionId: string;
+  /** The same principal in its client-facing shape. */
+  account: AuthUser;
 }
 
 declare global {

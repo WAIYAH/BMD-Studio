@@ -38,6 +38,16 @@ const envSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
 
+  // Authentication (Phase 3). HS256 needs a secret at least as long as the
+  // hash output to keep its full strength.
+  JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 characters'),
+  JWT_ACCESS_TTL: z
+    .string()
+    .regex(/^\d+[smh]$/, 'JWT_ACCESS_TTL must look like 900s, 15m or 1h')
+    .default('15m'),
+  REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().max(365).default(30),
+  COOKIE_DOMAIN: z.string().optional(),
+
   MAX_UPLOAD_MB: z.coerce.number().int().positive().default(50),
 
   // Payments. `mock` never runs in production — enforced below.
@@ -63,8 +73,23 @@ if (raw.NODE_ENV === 'production' && raw.PAYMENTS_DRIVER === 'mock') {
   );
 }
 
+if (raw.NODE_ENV === 'production' && raw.JWT_ACCESS_SECRET.startsWith('replace-me')) {
+  throw new Error('JWT_ACCESS_SECRET still holds the .env.example placeholder. Generate a real secret.');
+}
+
+const TTL_UNIT_SECONDS = { s: 1, m: 60, h: 3600 } as const;
+
+function ttlToSeconds(ttl: string): number {
+  const unit = ttl.slice(-1) as keyof typeof TTL_UNIT_SECONDS;
+  return Number(ttl.slice(0, -1)) * TTL_UNIT_SECONDS[unit];
+}
+
 export const env = {
   ...raw,
+  accessTokenTtlSeconds: ttlToSeconds(raw.JWT_ACCESS_TTL),
+  // Browsers reject `Domain=localhost`; a host-only cookie is correct there.
+  cookieDomain:
+    raw.COOKIE_DOMAIN && raw.COOKIE_DOMAIN !== 'localhost' ? raw.COOKIE_DOMAIN : undefined,
   corsOrigins: csv(raw.CORS_ORIGINS),
   isProduction: raw.NODE_ENV === 'production',
   isTest: raw.NODE_ENV === 'test',
