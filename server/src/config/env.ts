@@ -30,9 +30,9 @@ const envSchema = z.object({
   API_PUBLIC_URL: z.string().url().default('http://localhost:4000'),
   CLIENT_PUBLIC_URL: z.string().url().default('http://localhost:5173'),
 
-  // Required from Phase 2 onwards; optional while the schema is being built so
-  // the server can boot and serve /health before a database exists.
-  DATABASE_URL: z.string().optional(),
+  // The database is not optional from Phase 2 onwards. Booting without it
+  // would only defer the failure to the first request.
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 
   RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),

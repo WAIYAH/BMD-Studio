@@ -41,5 +41,12 @@ export default tseslint.config(
     files: ['**/*.test.ts', '**/*.test.tsx', '**/tests/**'],
     rules: { 'no-console': 'off' },
   },
+  {
+    // The seed is a command-line script run by an operator. Its progress
+    // output is the interface, not stray debugging, and it must not depend on
+    // the application's request-scoped logger.
+    files: ['server/prisma/**/*.ts'],
+    rules: { 'no-console': 'off' },
+  },
   prettier,
 );

@@ -2,7 +2,7 @@
 
 > Source of truth for architecture and delivery sequence.
 > Status legend: `PLANNED` · `IN PROGRESS` · `IMPLEMENTED` · `TESTED` · `PRODUCTION READY`
-> Last updated: 2026-09-08 (Phase 1 — foundation implemented)
+> Last updated: 2026-09-10 (Phase 2 — database implemented and tested)
 
 ---
 
@@ -305,7 +305,8 @@ updated_by) · `jobs` (name, last_run_at, status) for the scheduler.
 
 ### 4.2 Double-booking prevention (R1) — the critical constraint
 
-Prisma cannot express exclusion constraints, so a hand-written migration adds:
+Prisma cannot express exclusion constraints, so the hand-written migration
+`20260910094600_exclusion_constraints` adds them:
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS btree_gist;
@@ -313,28 +314,64 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;
 ALTER TABLE bookings
   ADD CONSTRAINT bookings_no_overlap
   EXCLUDE USING gist (
-    studio_room_id WITH =,
-    period         WITH &&
+    room_id                                    WITH =,
+    tstzrange(starts_at, ends_at, '[)')        WITH &&
   ) WHERE (status IN ('PENDING_PAYMENT','PENDING_APPROVAL','CONFIRMED','IN_PROGRESS'));
 ```
 
-`period` is a generated `tstzrange(starts_at, ends_at, '[)')` column, so an
-overlapping insert fails at the database no matter how many application servers
-are running. Equivalent constraints guard `equipment_rental_items` (per
-equipment unit) and `show_occurrences` (per room). The service layer catches
-SQLSTATE `23P01` and returns `409 SLOT_UNAVAILABLE`. Booking creation runs
-inside a transaction that re-validates operating hours, blackouts and
-service/room compatibility, and **recomputes the price server-side** before the
-insert.
+**Implementation note — expression instead of a generated column.** The plan
+originally specified a stored generated `period` column. The shipped version
+uses the `tstzrange(...)` expression directly. The guarantee is identical, and
+it keeps the physical schema free of columns Prisma does not model, so
+`prisma migrate dev` never proposes dropping them. This was verified: a
+`--create-only` diff against the live schema produces an empty migration.
+
+An overlapping insert fails at the database no matter how many application
+servers are running. Equivalent constraints guard `equipment_rental_items` (per
+equipment unit) and `show_occurrences` (per room, only when a room is set).
+
+Because an exclusion predicate cannot join, `equipment_rental_items` carries a
+denormalised `rental_status` mirroring its parent. Two triggers keep it
+truthful — one inherits the parent's status on insert, one propagates a change
+on update — so the mirror is maintained by the database, not trusted to
+application code.
+
+The migration also adds `CHECK` constraints that reject inverted and
+zero-length periods and non-positive payment amounts, so a bad range fails as a
+clear `23514` rather than as an obscure error inside the exclusion operator.
+
+The service layer catches SQLSTATE `23P01` and returns `409 SLOT_UNAVAILABLE`;
+`server/src/lib/prisma.ts` extracts the SQLSTATE (Prisma reports exclusion and
+check violations as `PrismaClientUnknownRequestError`, with the code only in the
+message text). Booking creation runs inside a transaction that re-validates
+operating hours, blackouts and service/room compatibility, and **recomputes the
+price server-side** before the insert.
 
 ### 4.3 Indexing
 
-`bookings(studio_room_id, starts_at)`, GiST on `period`,
-`bookings(customer_id, starts_at desc)`, `show_occurrences(starts_at)` with a
-partial index on `LIVE`, `payments(status, created_at)`, unique
+`bookings(room_id, starts_at)`, the GiST index created by each exclusion
+constraint, `bookings(customer_id, starts_at desc)`, `show_occurrences(starts_at)`
+with a partial index on `LIVE`, `payments(status, created_at)`, unique
 `payment_transactions(provider, provider_ref)`,
 `equipment(status, category_id)`, `audit_logs(entity_type, entity_id, at desc)`,
-`notifications(user_id, read_at)`.
+`notifications(user_id, read_at)`, plus GiST range indexes on
+`blackout_periods` and `equipment_maintenance` for the availability engine.
+
+### 4.4 Phase 2 delivery notes
+
+| Decision             | Shipped as                                                                                                                                                                     |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Times of day         | `Int` minutes from midnight (0–1440) on `operating_hours` and `show_schedules`, not SQL `time`. A wall-clock time has no instant attached; an integer keeps comparison exact.  |
+| Weekday numbering    | `0 = Sunday … 6 = Saturday`, matching JavaScript's `Date#getDay`.                                                                                                              |
+| Prisma configuration | `server/prisma.config.ts`. The `package.json#prisma` key is deprecated and removed in Prisma 7.                                                                                |
+| Seeded admin         | Created only when `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` are set. There is no default password in any environment, and a re-run never resets an existing password.       |
+| Seed idempotency     | Every write is an upsert on a natural key; role grants are replaced rather than merged, so a revoked permission is actually revoked. Verified by re-running: counts unchanged. |
+| Test database        | A second Postgres container on port 5433. The suite refuses to start when `TEST_DATABASE_URL` equals `DATABASE_URL`, because it truncates between tests.                       |
+
+Files: `server/prisma/schema.prisma` (44 models, 23 enums),
+`server/prisma/migrations/…_init`, `…_exclusion_constraints`,
+`server/prisma/seed.ts`, `server/src/lib/prisma.ts`,
+`server/tests/integration/overlap-constraints.test.ts`.
 
 ---
 
@@ -490,7 +527,7 @@ short of that is reported as `IN PROGRESS`, never as implemented.
 | --------------------------- | ----------- |
 | P0 Audit and plan           | IMPLEMENTED |
 | P1 Foundation               | IMPLEMENTED |
-| P2 Database                 | PLANNED     |
+| P2 Database                 | TESTED      |
 | P3 Auth and RBAC            | PLANNED     |
 | P4 Studio and services      | PLANNED     |
 | P5 Booking and availability | PLANNED     |

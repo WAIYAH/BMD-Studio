@@ -35,8 +35,11 @@ jobs:
 
     env:
       NODE_ENV: test
+      # Two distinct databases on the one service container. The test suite
+      # refuses to run when these are the same, because it truncates between
+      # tests and must never be able to do that to a development database.
       TEST_DATABASE_URL: postgresql://bmd:bmd_ci_password@localhost:5432/bmd_studio_test?schema=public
-      DATABASE_URL: postgresql://bmd:bmd_ci_password@localhost:5432/bmd_studio_test?schema=public
+      DATABASE_URL: postgresql://bmd:bmd_ci_password@localhost:5432/bmd_studio?schema=public
 
     steps:
       - uses: actions/checkout@v4
@@ -49,8 +52,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Create the development-role database
+        run: PGPASSWORD=bmd_ci_password psql -h localhost -U bmd -d bmd_studio_test -c 'CREATE DATABASE bmd_studio;'
+
       - name: Build shared package
         run: npm run build --workspace=@bmd/shared
+
+      # Server code imports types from the generated client, so this must
+      # happen before anything typechecks or builds.
+      - name: Generate Prisma client
+        run: npm run db:generate --workspace=server
+
+      - name: Verify migrations apply from empty
+        run: npm run db:deploy --workspace=server
 
       - name: Typecheck
         run: npm run typecheck

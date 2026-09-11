@@ -1,6 +1,7 @@
 import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
+import { disconnectPrisma } from './lib/prisma.js';
 
 // All scheduling and business logic assumes the studio timezone. Pinning it
 // here removes any dependence on the host machine's locale.
@@ -22,7 +23,11 @@ function shutdown(signal: string): void {
       logger.error({ err }, 'Error during shutdown');
       process.exit(1);
     }
-    process.exit(0);
+    // Close the pool only after the last request has drained, so in-flight
+    // work is never cut off mid-transaction.
+    disconnectPrisma()
+      .catch((error: unknown) => logger.error({ err: error }, 'Error disconnecting Prisma'))
+      .finally(() => process.exit(0));
   });
   // Do not let a hung connection block a deploy indefinitely.
   setTimeout(() => process.exit(1), 10_000).unref();

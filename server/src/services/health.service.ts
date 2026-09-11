@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import type { HealthPayload, ReadinessCheck, ReadinessPayload } from '@bmd/shared';
 import { env } from '../config/env.js';
 import { logger } from '../lib/logger.js';
+import { prisma } from '../lib/prisma.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -48,27 +49,26 @@ export async function getReadiness(): Promise<ReadinessPayload> {
 }
 
 async function checkDatabase(): Promise<ReadinessCheck> {
-  if (!env.DATABASE_URL) {
-    return {
-      name: 'database',
-      status: 'skipped',
-      detail: 'DATABASE_URL is not configured (Prisma is introduced in Phase 2).',
-    };
-  }
-
-  // Phase 2 replaces this with `prisma.$queryRaw\`SELECT 1\``.
+  const started = performance.now();
   try {
-    const started = performance.now();
-    // No client yet; a configured URL alone is not evidence of a live database.
+    // A round trip is the only honest evidence that the database is reachable;
+    // a configured URL proves nothing.
+    await prisma.$queryRaw`SELECT 1`;
     return {
       name: 'database',
-      status: 'skipped',
-      detail: 'Prisma client not yet installed (Phase 2).',
+      status: 'up',
       latencyMs: Math.round(performance.now() - started),
     };
   } catch (error) {
     logger.error({ err: error }, 'Database readiness probe failed');
-    return { name: 'database', status: 'down', detail: 'Connection failed.' };
+    return {
+      name: 'database',
+      status: 'down',
+      // The reason stays in the logs; a probe response is not the place to
+      // publish connection strings or driver internals.
+      detail: 'Connection failed.',
+      latencyMs: Math.round(performance.now() - started),
+    };
   }
 }
 

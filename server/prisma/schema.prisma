@@ -1,0 +1,1261 @@
+// B.M.D Studio Management System — database schema
+//
+// Conventions (see plan.md §4):
+//   * All timestamps are `timestamptz` stored in UTC; conversion to
+//     Africa/Nairobi happens only at the presentation edges.
+//   * Money is an integer number of KES cents (`Int`). Never a float.
+//   * Every table carries `id` (cuid), `created_at` and `updated_at`.
+//   * Times of day (operating hours, show schedules) are stored as minutes
+//     from midnight (0..1440) rather than SQL `time`. A wall-clock time has no
+//     instant attached, and an integer keeps arithmetic and comparison exact
+//     without dragging a fake date through the code.
+//
+// Overlap prevention (R1) is enforced by PostgreSQL `EXCLUDE USING gist`
+// constraints that Prisma cannot express. They live in the hand-written
+// migration `.../_exclusion_constraints/migration.sql` and are the reason the
+// integration tests run against a real database rather than a mock.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// ENUMS
+// ---------------------------------------------------------------------------
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  DISABLED
+}
+
+enum RoomStatus {
+  ACTIVE
+  MAINTENANCE
+  INACTIVE
+}
+
+enum PricingModel {
+  HOURLY
+  SESSION
+  PACKAGE
+}
+
+enum BlackoutReason {
+  HOLIDAY
+  MAINTENANCE
+  PRIVATE_EVENT
+  OTHER
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT
+  PENDING_APPROVAL
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+  RESCHEDULED
+}
+
+enum BookingItemKind {
+  SERVICE
+  EQUIPMENT
+  ADDON
+}
+
+enum EquipmentCondition {
+  NEW
+  GOOD
+  FAIR
+  POOR
+  DAMAGED
+}
+
+enum EquipmentStatus {
+  AVAILABLE
+  RESERVED
+  RENTED
+  MAINTENANCE
+  RETIRED
+}
+
+enum RentalStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  CHECKED_OUT
+  RETURNED
+  OVERDUE
+  CANCELLED
+}
+
+enum ShowHostRole {
+  PRESENTER
+  CO_HOST
+  PRODUCER
+}
+
+enum OccurrenceStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+}
+
+enum StreamStatus {
+  IDLE
+  SCHEDULED
+  LIVE
+  ENDED
+  ERROR
+}
+
+enum StreamPlatformKind {
+  YOUTUBE
+  FACEBOOK
+  CUSTOM_RTMP
+}
+
+enum MediaVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum GalleryType {
+  PHOTO
+  VIDEO
+  PORTFOLIO
+}
+
+enum PaymentProvider {
+  MPESA
+  STRIPE
+  CASH
+  BANK
+}
+
+enum PaymentPurpose {
+  BOOKING
+  RENTAL
+  DEPOSIT
+  LATE_FEE
+  DAMAGE
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCESSFUL
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentTransactionKind {
+  INITIATE
+  CALLBACK
+  QUERY
+  REFUND
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSING
+  SUCCESSFUL
+  FAILED
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  PUSH
+  IN_APP
+}
+
+enum OutboxStatus {
+  QUEUED
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum JobStatus {
+  IDLE
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+// ---------------------------------------------------------------------------
+// IDENTITY & ACCESS
+// ---------------------------------------------------------------------------
+
+model User {
+  id              String     @id @default(cuid())
+  email           String     @unique
+  /// E.164, Kenyan numbers normalise to +254…
+  phone           String?    @unique
+  passwordHash    String     @map("password_hash")
+  firstName       String     @map("first_name")
+  lastName        String     @map("last_name")
+  status          UserStatus @default(PENDING_VERIFICATION)
+  avatarMediaId   String?    @map("avatar_media_id")
+  emailVerifiedAt DateTime?  @map("email_verified_at") @db.Timestamptz(3)
+  lastLoginAt     DateTime?  @map("last_login_at") @db.Timestamptz(3)
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  avatar MediaFile? @relation("UserAvatar", fields: [avatarMediaId], references: [id], onDelete: SetNull)
+
+  roles                  UserRole[]
+  sessions               Session[]
+  passwordResetTokens    PasswordResetToken[]
+  emailVerificationToken EmailVerificationToken[]
+
+  bookings           Booking[]              @relation("BookingCustomer")
+  approvedBookings   Booking[]              @relation("BookingApprover")
+  bookingStatusMoves BookingStatusHistory[]
+
+  rentals         EquipmentRental[] @relation("RentalCustomer")
+  approvedRentals EquipmentRental[] @relation("RentalApprover")
+
+  showHosts     ShowHost[]
+  uploadedMedia MediaFile[] @relation("MediaUploader")
+
+  payments Payment[]
+
+  notifications           Notification[]
+  notificationPreferences NotificationPreference[]
+
+  auditLogs       AuditLog[]
+  settingsUpdated Setting[]
+
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  /// Matches `ROLES` in @bmd/shared. Stable machine key.
+  key         String   @unique
+  name        String
+  description String?
+  /// System roles cannot be deleted through the admin UI.
+  isSystem    Boolean  @default(true) @map("is_system")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  permissions RolePermission[]
+  users       UserRole[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  /// `<resource>:<action>[:scope]`, e.g. `booking:read:own`.
+  key         String   @unique
+  description String?
+  /// Coarse grouping for the admin UI only.
+  resource    String
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  roles RolePermission[]
+
+  @@index([resource])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String   @map("role_id")
+  permissionId String   @map("permission_id")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  userId     String   @map("user_id")
+  roleId     String   @map("role_id")
+  assignedBy String?  @map("assigned_by")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+/// One row per refresh-token family member. The token itself is never stored —
+/// only its SHA-256 hash — so a database leak cannot be replayed as a session.
+model Session {
+  id             String    @id @default(cuid())
+  userId         String    @map("user_id")
+  refreshHash    String    @unique @map("refresh_hash")
+  /// Session family: rotation keeps the id, reuse of a retired token revokes
+  /// every session sharing this family id.
+  familyId       String    @map("family_id")
+  userAgent      String?   @map("user_agent")
+  ipAddress      String?   @map("ip_address")
+  expiresAt      DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt      DateTime? @map("revoked_at") @db.Timestamptz(3)
+  revokedReason  String?   @map("revoked_reason")
+  replacedByHash String?   @map("replaced_by_hash")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("email_verification_tokens")
+}
+
+// ---------------------------------------------------------------------------
+// STUDIO CONFIGURATION
+// ---------------------------------------------------------------------------
+
+model Studio {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  branch      String?
+  description String?
+  addressLine String?  @map("address_line")
+  city        String?
+  county      String?
+  latitude    Float?
+  longitude   Float?
+  phone       String?
+  email       String?
+  timezone    String   @default("Africa/Nairobi")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  rooms          StudioRoom[]
+  operatingHours OperatingHour[]
+  blackouts      BlackoutPeriod[]
+  bookings       Booking[]
+
+  @@index([isActive])
+  @@map("studios")
+}
+
+model StudioRoom {
+  id              String     @id @default(cuid())
+  studioId        String     @map("studio_id")
+  name            String
+  slug            String
+  description     String?
+  capacity        Int        @default(1)
+  hourlyRateCents Int        @map("hourly_rate_cents")
+  status          RoomStatus @default(ACTIVE)
+  /// Minutes of turnaround enforced after every booking in this room.
+  bufferMinutes   Int        @default(0) @map("buffer_minutes")
+  coverMediaId    String?    @map("cover_media_id")
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  studio      Studio           @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  cover       MediaFile?       @relation("RoomCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+  services    RoomService[]
+  bookings    Booking[]
+  blackouts   BlackoutPeriod[]
+  schedules   ShowSchedule[]
+  occurrences ShowOccurrence[]
+
+  @@unique([studioId, slug])
+  @@index([studioId, status])
+  @@map("studio_rooms")
+}
+
+model ServiceCategory {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  position    Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  services Service[]
+
+  @@map("service_categories")
+}
+
+model Service {
+  id               String       @id @default(cuid())
+  categoryId       String       @map("category_id")
+  name             String
+  slug             String       @unique
+  description      String?
+  pricingModel     PricingModel @map("pricing_model")
+  basePriceCents   Int          @map("base_price_cents")
+  /// Bounds on a single booking of this service, in minutes.
+  minDurationMin   Int          @default(60) @map("min_duration_minutes")
+  maxDurationMin   Int          @default(480) @map("max_duration_minutes")
+  /// Booking granularity — slots are offered on this cadence.
+  slotIntervalMin  Int          @default(30) @map("slot_interval_minutes")
+  bufferMinutes    Int          @default(0) @map("buffer_minutes")
+  requiresApproval Boolean      @default(false) @map("requires_approval")
+  isActive         Boolean      @default(true) @map("is_active")
+  coverMediaId     String?      @map("cover_media_id")
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  category ServiceCategory       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  cover    MediaFile?            @relation("ServiceCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+  rooms    RoomService[]
+  bookings Booking[]
+  packages PhotographyPackage[]
+
+  @@index([categoryId, isActive])
+  @@map("services")
+}
+
+/// Which rooms can actually deliver which services, with an optional per-room
+/// price override.
+model RoomService {
+  roomId          String   @map("room_id")
+  serviceId       String   @map("service_id")
+  priceCentsOverride Int?  @map("price_cents_override")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  room    StudioRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  service Service    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([roomId, serviceId])
+  @@index([serviceId])
+  @@map("room_services")
+}
+
+/// Regular weekly opening hours. `weekday` is 0=Sunday … 6=Saturday, matching
+/// JavaScript's `Date#getDay`. Times are minutes from midnight in the studio's
+/// local timezone.
+model OperatingHour {
+  id          String   @id @default(cuid())
+  studioId    String   @map("studio_id")
+  weekday     Int
+  openMinute  Int      @map("open_minute")
+  closeMinute Int      @map("close_minute")
+  isClosed    Boolean  @default(false) @map("is_closed")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  studio Studio @relation(fields: [studioId], references: [id], onDelete: Cascade)
+
+  @@unique([studioId, weekday])
+  @@map("operating_hours")
+}
+
+/// A closed window. Scoped to a whole studio when `roomId` is null, otherwise
+/// to a single room.
+model BlackoutPeriod {
+  id        String         @id @default(cuid())
+  studioId  String         @map("studio_id")
+  roomId    String?        @map("room_id")
+  startsAt  DateTime       @map("starts_at") @db.Timestamptz(3)
+  endsAt    DateTime       @map("ends_at") @db.Timestamptz(3)
+  reason    BlackoutReason @default(OTHER)
+  note      String?
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  studio Studio      @relation(fields: [studioId], references: [id], onDelete: Cascade)
+  room   StudioRoom? @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([studioId, startsAt])
+  @@index([roomId, startsAt])
+  @@map("blackout_periods")
+}
+
+// ---------------------------------------------------------------------------
+// BOOKINGS
+// ---------------------------------------------------------------------------
+
+/// The overlap guard is `bookings_no_overlap`, an `EXCLUDE USING gist`
+/// constraint added in a hand-written migration. It covers only the statuses
+/// that actually hold a room (see plan.md 4.2), so a cancelled booking frees
+/// its slot immediately.
+model Booking {
+  id         String        @id @default(cuid())
+  /// Short human reference shown to customers, e.g. BMD-4F2A9C.
+  reference  String        @unique
+  customerId String        @map("customer_id")
+  studioId   String        @map("studio_id")
+  roomId     String        @map("room_id")
+  serviceId  String        @map("service_id")
+  startsAt   DateTime      @map("starts_at") @db.Timestamptz(3)
+  endsAt     DateTime      @map("ends_at") @db.Timestamptz(3)
+  status     BookingStatus @default(PENDING_PAYMENT)
+
+  /// Always recomputed server-side from services, items and rules. A total
+  /// supplied by a client is ignored.
+  subtotalCents Int @map("subtotal_cents")
+  discountCents Int @default(0) @map("discount_cents")
+  taxCents      Int @default(0) @map("tax_cents")
+  totalCents    Int @map("total_cents")
+
+  headcount          Int?      @default(1)
+  notes              String?
+  internalNotes      String?   @map("internal_notes")
+  approvedById       String?   @map("approved_by_id")
+  approvedAt         DateTime? @map("approved_at") @db.Timestamptz(3)
+  cancelledAt        DateTime? @map("cancelled_at") @db.Timestamptz(3)
+  cancellationReason String?   @map("cancellation_reason")
+  /// Set on the superseded row when a booking is moved to a new slot.
+  rescheduledToId    String?   @unique @map("rescheduled_to_id")
+  completedAt        DateTime? @map("completed_at") @db.Timestamptz(3)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  customer   User       @relation("BookingCustomer", fields: [customerId], references: [id], onDelete: Restrict)
+  studio     Studio     @relation(fields: [studioId], references: [id], onDelete: Restrict)
+  room       StudioRoom @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  service    Service    @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  approvedBy User?      @relation("BookingApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  rescheduledTo   Booking? @relation("BookingReschedule", fields: [rescheduledToId], references: [id], onDelete: SetNull)
+  rescheduledFrom Booking? @relation("BookingReschedule")
+
+  items         BookingItem[]
+  statusHistory BookingStatusHistory[]
+  rentals       EquipmentRental[]
+  payments      Payment[]
+  deliverables  BookingDeliverable[]
+
+  @@index([roomId, startsAt])
+  @@index([customerId, startsAt(sort: Desc)])
+  @@index([status, startsAt])
+  @@index([studioId, startsAt])
+  @@map("bookings")
+}
+
+model BookingItem {
+  id          String          @id @default(cuid())
+  bookingId   String          @map("booking_id")
+  kind        BookingItemKind
+  /// Captured at purchase time so a later rename of the underlying service
+  /// does not rewrite historical invoices.
+  label       String
+  serviceId   String?         @map("service_id")
+  equipmentId String?         @map("equipment_id")
+
+  quantity       Int @default(1)
+  unitPriceCents Int @map("unit_price_cents")
+  totalCents     Int @map("total_cents")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  booking   Booking    @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  equipment Equipment? @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+
+  @@index([bookingId])
+  @@map("booking_items")
+}
+
+model BookingStatusHistory {
+  id         String         @id @default(cuid())
+  bookingId  String         @map("booking_id")
+  fromStatus BookingStatus? @map("from_status")
+  toStatus   BookingStatus  @map("to_status")
+  actorId    String?        @map("actor_id")
+  reason     String?
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  actor   User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([bookingId, createdAt])
+  @@map("booking_status_history")
+}
+
+// ---------------------------------------------------------------------------
+// EQUIPMENT
+// ---------------------------------------------------------------------------
+
+model EquipmentCategory {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  equipment Equipment[]
+
+  @@map("equipment_categories")
+}
+
+model Equipment {
+  id           String             @id @default(cuid())
+  categoryId   String             @map("category_id")
+  name         String
+  description  String?
+  manufacturer String?
+  model        String?
+  serialNo     String?            @unique @map("serial_no")
+  assetTag     String             @unique @map("asset_tag")
+  condition    EquipmentCondition @default(GOOD)
+  status       EquipmentStatus    @default(AVAILABLE)
+
+  dailyRateCents Int @map("daily_rate_cents")
+  depositCents   Int @default(0) @map("deposit_cents")
+
+  /// Physical whereabouts: store room, rack, vehicle.
+  location     String?
+  purchasedAt  DateTime? @map("purchased_at") @db.Timestamptz(3)
+  imageMediaId String?   @map("image_media_id")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  category     EquipmentCategory      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  image        MediaFile?             @relation("EquipmentImage", fields: [imageMediaId], references: [id], onDelete: SetNull)
+  rentalItems  EquipmentRentalItem[]
+  maintenance  EquipmentMaintenance[]
+  bookingItems BookingItem[]
+
+  @@index([status, categoryId])
+  @@map("equipment")
+}
+
+model EquipmentRental {
+  id         String       @id @default(cuid())
+  reference  String       @unique
+  customerId String       @map("customer_id")
+  /// Set when the rental was raised as part of a studio booking.
+  bookingId  String?      @map("booking_id")
+  startsAt   DateTime     @map("starts_at") @db.Timestamptz(3)
+  endsAt     DateTime     @map("ends_at") @db.Timestamptz(3)
+  status     RentalStatus @default(PENDING_APPROVAL)
+
+  subtotalCents  Int @map("subtotal_cents")
+  depositCents   Int @default(0) @map("deposit_cents")
+  lateFeeCents   Int @default(0) @map("late_fee_cents")
+  damageFeeCents Int @default(0) @map("damage_fee_cents")
+  totalCents     Int @map("total_cents")
+
+  notes          String?
+  approvedById   String?   @map("approved_by_id")
+  approvedAt     DateTime? @map("approved_at") @db.Timestamptz(3)
+  rejectedReason String?   @map("rejected_reason")
+  checkedOutAt   DateTime? @map("checked_out_at") @db.Timestamptz(3)
+  returnedAt     DateTime? @map("returned_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  customer   User     @relation("RentalCustomer", fields: [customerId], references: [id], onDelete: Restrict)
+  approvedBy User?    @relation("RentalApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  booking    Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  items    EquipmentRentalItem[]
+  payments Payment[]
+
+  @@index([customerId, startsAt(sort: Desc)])
+  @@index([status, startsAt])
+  @@map("equipment_rentals")
+}
+
+/// One row per physical unit on a rental. The exclusion constraint
+/// `equipment_rental_items_no_overlap` keys on equipment_id, so the same unit
+/// cannot be out twice over the same window. starts_at/ends_at are
+/// denormalised from the parent rental because a constraint cannot reach
+/// across a join.
+model EquipmentRentalItem {
+  id          String   @id @default(cuid())
+  rentalId    String   @map("rental_id")
+  equipmentId String   @map("equipment_id")
+  startsAt    DateTime @map("starts_at") @db.Timestamptz(3)
+  endsAt      DateTime @map("ends_at") @db.Timestamptz(3)
+  /// Mirrors the parent rental's status. Denormalised because an exclusion
+  /// constraint's predicate cannot join, and kept honest by the database
+  /// trigger `equipment_rental_items_sync_status` rather than by application
+  /// code — see the `_exclusion_constraints` migration.
+  rentalStatus RentalStatus @default(PENDING_APPROVAL) @map("rental_status")
+
+  quantity      Int @default(1)
+  unitRateCents Int @map("unit_rate_cents")
+  totalCents    Int @map("total_cents")
+
+  conditionOut EquipmentCondition? @map("condition_out")
+  conditionIn  EquipmentCondition? @map("condition_in")
+  damageNotes  String?             @map("damage_notes")
+  lateFeeCents Int                 @default(0) @map("late_fee_cents")
+  returnedAt   DateTime?           @map("returned_at") @db.Timestamptz(3)
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  rental    EquipmentRental @relation(fields: [rentalId], references: [id], onDelete: Cascade)
+  equipment Equipment       @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+
+  @@index([rentalId])
+  @@index([equipmentId, startsAt])
+  @@map("equipment_rental_items")
+}
+
+model EquipmentMaintenance {
+  id          String    @id @default(cuid())
+  equipmentId String    @map("equipment_id")
+  openedAt    DateTime  @default(now()) @map("opened_at") @db.Timestamptz(3)
+  closedAt    DateTime? @map("closed_at") @db.Timestamptz(3)
+  /// Window during which the unit is unavailable. Open-ended until closed.
+  startsAt    DateTime  @map("starts_at") @db.Timestamptz(3)
+  endsAt      DateTime? @map("ends_at") @db.Timestamptz(3)
+  reason      String
+  notes       String?
+  costCents   Int       @default(0) @map("cost_cents")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@index([equipmentId, startsAt])
+  @@map("equipment_maintenance")
+}
+
+// ---------------------------------------------------------------------------
+// SHOWS & BROADCAST SCHEDULE
+// ---------------------------------------------------------------------------
+
+model Show {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  description  String?
+  category     String?
+  coverMediaId String?  @map("cover_media_id")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  cover       MediaFile?       @relation("ShowCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+  hosts       ShowHost[]
+  schedules   ShowSchedule[]
+  occurrences ShowOccurrence[]
+
+  @@index([isActive])
+  @@map("shows")
+}
+
+model ShowHost {
+  showId    String       @map("show_id")
+  userId    String       @map("user_id")
+  role      ShowHostRole @default(PRESENTER)
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  show Show @relation(fields: [showId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([showId, userId])
+  @@index([userId])
+  @@map("show_hosts")
+}
+
+/// A recurrence rule, not a concrete airing. `weekdays` holds 0=Sunday..6,
+/// times are minutes from midnight in the studio timezone. The expansion job
+/// materialises these into ShowOccurrence rows (R8) so that "what is live now"
+/// is one indexed lookup rather than recurrence arithmetic inside a query.
+model ShowSchedule {
+  id          String    @id @default(cuid())
+  showId      String    @map("show_id")
+  roomId      String?   @map("room_id")
+  weekdays    Int[]
+  startMinute Int       @map("start_minute")
+  endMinute   Int       @map("end_minute")
+  validFrom   DateTime  @map("valid_from") @db.Timestamptz(3)
+  validTo     DateTime? @map("valid_to") @db.Timestamptz(3)
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  show        Show             @relation(fields: [showId], references: [id], onDelete: Cascade)
+  room        StudioRoom?      @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  occurrences ShowOccurrence[]
+
+  @@index([showId, isActive])
+  @@map("show_schedules")
+}
+
+/// A concrete airing. Guarded by `show_occurrences_no_overlap` so two shows
+/// cannot claim the same room at the same time.
+model ShowOccurrence {
+  id         String           @id @default(cuid())
+  showId     String           @map("show_id")
+  scheduleId String?          @map("schedule_id")
+  roomId     String?          @map("room_id")
+  startsAt   DateTime         @map("starts_at") @db.Timestamptz(3)
+  endsAt     DateTime         @map("ends_at") @db.Timestamptz(3)
+  status     OccurrenceStatus @default(SCHEDULED)
+  title      String?
+  notes      String?
+  /// Set by the ON-AIR control panel, never inferred from the clock alone.
+  wentLiveAt DateTime?        @map("went_live_at") @db.Timestamptz(3)
+  endedAt    DateTime?        @map("ended_at") @db.Timestamptz(3)
+  createdAt  DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  show     Show          @relation(fields: [showId], references: [id], onDelete: Cascade)
+  schedule ShowSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  room     StudioRoom?   @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  streams  Stream[]
+
+  /// The expansion job is idempotent: re-running it must not duplicate airings.
+  @@unique([scheduleId, startsAt])
+  @@index([startsAt])
+  @@index([status, startsAt])
+  @@index([showId, startsAt(sort: Desc)])
+  @@map("show_occurrences")
+}
+
+// ---------------------------------------------------------------------------
+// STREAMING
+// ---------------------------------------------------------------------------
+
+model Stream {
+  id             String       @id @default(cuid())
+  occurrenceId   String?      @map("occurrence_id")
+  title          String
+  description    String?
+  thumbnailMediaId String?    @map("thumbnail_media_id")
+  status         StreamStatus @default(IDLE)
+  scheduledFor   DateTime?    @map("scheduled_for") @db.Timestamptz(3)
+  startedAt      DateTime?    @map("started_at") @db.Timestamptz(3)
+  endedAt        DateTime?    @map("ended_at") @db.Timestamptz(3)
+  /// Populated when a provider call fails, so the UI reports a real error
+  /// rather than a stuck IDLE.
+  lastError      String?      @map("last_error")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  occurrence ShowOccurrence? @relation(fields: [occurrenceId], references: [id], onDelete: SetNull)
+  thumbnail  MediaFile?      @relation("StreamThumbnail", fields: [thumbnailMediaId], references: [id], onDelete: SetNull)
+  platforms  StreamPlatform[]
+
+  @@index([status, scheduledFor])
+  @@index([occurrenceId])
+  @@map("streams")
+}
+
+model StreamPlatform {
+  id         String             @id @default(cuid())
+  streamId   String             @map("stream_id")
+  platform   StreamPlatformKind
+  /// Provider-side broadcast id. Unique per platform so a retry cannot create
+  /// a second row for the same remote broadcast.
+  externalId String?            @map("external_id")
+  watchUrl   String?            @map("watch_url")
+  embedUrl   String?            @map("embed_url")
+  rtmpUrl    String?            @map("rtmp_url")
+  status     StreamStatus       @default(IDLE)
+  lastError  String?            @map("last_error")
+  createdAt  DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  stream Stream       @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  stats  StreamStat[]
+
+  @@unique([platform, externalId])
+  @@unique([streamId, platform])
+  @@map("stream_platforms")
+}
+
+/// Time series read from provider APIs by the polling job. Never written from
+/// client input and never invented when a provider is unconfigured.
+model StreamStat {
+  id                String   @id @default(cuid())
+  platformId        String   @map("platform_id")
+  recordedAt        DateTime @map("recorded_at") @db.Timestamptz(3)
+  concurrentViewers Int?     @map("concurrent_viewers")
+  totalViews        Int?     @map("total_views")
+  likes             Int?
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  platform StreamPlatform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@unique([platformId, recordedAt])
+  @@index([platformId, recordedAt(sort: Desc)])
+  @@map("stream_stats")
+}
+
+// ---------------------------------------------------------------------------
+// MEDIA
+// ---------------------------------------------------------------------------
+
+/// Metadata only. Bytes live in object storage under `storageKey`.
+model MediaFile {
+  id          String          @id @default(cuid())
+  storageKey  String          @unique @map("storage_key")
+  bucket      String
+  filename    String
+  mimeType    String          @map("mime_type")
+  sizeBytes   Int             @map("size_bytes")
+  width       Int?
+  height      Int?
+  durationSec Int?            @map("duration_seconds")
+  /// SHA-256 of the uploaded bytes, for dedupe and integrity checks.
+  checksum    String?
+  visibility  MediaVisibility @default(PRIVATE)
+  /// Derived renditions keyed by name, e.g. { "thumb": { "key": "…" } }.
+  variants    Json?
+  altText     String?         @map("alt_text")
+  uploadedById String?        @map("uploaded_by_id")
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  uploadedBy User? @relation("MediaUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  userAvatars      User[]        @relation("UserAvatar")
+  roomCovers       StudioRoom[]  @relation("RoomCover")
+  serviceCovers    Service[]     @relation("ServiceCover")
+  equipmentImages  Equipment[]   @relation("EquipmentImage")
+  showCovers       Show[]        @relation("ShowCover")
+  streamThumbnails Stream[]      @relation("StreamThumbnail")
+  galleryCovers    Gallery[]     @relation("GalleryCover")
+  galleryItems     GalleryItem[]
+
+  @@index([visibility, createdAt(sort: Desc)])
+  @@index([uploadedById])
+  @@map("media_files")
+}
+
+model Gallery {
+  id           String      @id @default(cuid())
+  title        String
+  slug         String      @unique
+  description  String?
+  type         GalleryType @default(PHOTO)
+  coverMediaId String?     @map("cover_media_id")
+  isPublished  Boolean     @default(false) @map("is_published")
+  publishedAt  DateTime?   @map("published_at") @db.Timestamptz(3)
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  cover        MediaFile?           @relation("GalleryCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+  items        GalleryItem[]
+  deliverables BookingDeliverable[]
+
+  @@index([isPublished, publishedAt(sort: Desc)])
+  @@map("galleries")
+}
+
+model GalleryItem {
+  id        String   @id @default(cuid())
+  galleryId String   @map("gallery_id")
+  mediaId   String   @map("media_id")
+  position  Int      @default(0)
+  caption   String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  gallery Gallery   @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  media   MediaFile @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([galleryId, mediaId])
+  @@index([galleryId, position])
+  @@map("gallery_items")
+}
+
+// ---------------------------------------------------------------------------
+// PHOTOGRAPHY
+// ---------------------------------------------------------------------------
+
+/// Photography is modelled as services under a photography category; a package
+/// adds the deliverable terms that a plain service has no room for.
+model PhotographyPackage {
+  id                String   @id @default(cuid())
+  serviceId         String   @map("service_id")
+  name              String
+  description       String?
+  deliverableCount  Int      @map("deliverable_count")
+  editTurnaroundDays Int     @map("edit_turnaround_days")
+  priceCents        Int      @map("price_cents")
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId, isActive])
+  @@map("photography_packages")
+}
+
+model BookingDeliverable {
+  id          String    @id @default(cuid())
+  bookingId   String    @map("booking_id")
+  galleryId   String?   @map("gallery_id")
+  title       String
+  notes       String?
+  dueAt       DateTime? @map("due_at") @db.Timestamptz(3)
+  deliveredAt DateTime? @map("delivered_at") @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  booking Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  gallery Gallery? @relation(fields: [galleryId], references: [id], onDelete: SetNull)
+
+  @@index([bookingId])
+  @@map("booking_deliverables")
+}
+
+// ---------------------------------------------------------------------------
+// PAYMENTS
+// ---------------------------------------------------------------------------
+
+/// A payment is an independent record, not a field on a booking. Its status is
+/// only ever moved by a backend-verified provider callback (R4) — never by
+/// anything a client asserts.
+model Payment {
+  id         String          @id @default(cuid())
+  reference  String          @unique
+  customerId String          @map("customer_id")
+  bookingId  String?         @map("booking_id")
+  rentalId   String?         @map("rental_id")
+  provider   PaymentProvider
+  purpose    PaymentPurpose  @default(BOOKING)
+  status     PaymentStatus   @default(PENDING)
+
+  amountCents Int    @map("amount_cents")
+  currency    String @default("KES")
+
+  /// Supplied by the client on initiation; a repeat with the same key returns
+  /// the original payment instead of starting a second one.
+  idempotencyKey String  @unique @map("idempotency_key")
+  /// Payer identity as given to the provider (M-Pesa MSISDN, card fingerprint).
+  payerRef       String? @map("payer_ref")
+  /// Provider-side identifier once known (CheckoutRequestID, PaymentIntent id).
+  providerRef    String? @map("provider_ref")
+  /// M-Pesa receipt number or equivalent, present only on success.
+  receiptNumber  String? @unique @map("receipt_number")
+
+  failureReason String?   @map("failure_reason")
+  paidAt        DateTime? @map("paid_at") @db.Timestamptz(3)
+  /// Initiation deadline; a PENDING payment past this is swept to CANCELLED.
+  expiresAt     DateTime? @map("expires_at") @db.Timestamptz(3)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  customer User             @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  booking  Booking?         @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  rental   EquipmentRental? @relation(fields: [rentalId], references: [id], onDelete: SetNull)
+
+  transactions PaymentTransaction[]
+  refunds      Refund[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([customerId, createdAt(sort: Desc)])
+  @@index([bookingId])
+  @@index([rentalId])
+  @@map("payments")
+}
+
+/// Append-only provider event ledger. Rows are never updated or deleted: this
+/// is the audit trail that explains why a payment holds the status it holds.
+model PaymentTransaction {
+  id          String                 @id @default(cuid())
+  paymentId   String                 @map("payment_id")
+  kind        PaymentTransactionKind
+  provider    PaymentProvider
+  /// Provider transaction id. Unique per provider, which is what makes a
+  /// replayed callback a no-op rather than a double credit (R4).
+  providerRef String                 @map("provider_ref")
+  resultCode  String?                @map("result_code")
+  resultDesc  String?                @map("result_desc")
+  amountCents Int?                   @map("amount_cents")
+  /// Verbatim provider payload, redacted of secrets before it is logged.
+  rawPayload  Json                   @map("raw_payload")
+  /// False when a callback arrived but its signature or source could not be
+  /// verified. Such a row is recorded and then ignored.
+  signatureVerified Boolean          @default(false) @map("signature_verified")
+  sourceIp    String?                @map("source_ip")
+  receivedAt  DateTime               @default(now()) @map("received_at") @db.Timestamptz(3)
+  createdAt   DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerRef])
+  @@index([paymentId, receivedAt])
+  @@map("payment_transactions")
+}
+
+model Refund {
+  id          String       @id @default(cuid())
+  paymentId   String       @map("payment_id")
+  amountCents Int          @map("amount_cents")
+  reason      String
+  status      RefundStatus @default(PENDING)
+  providerRef String?      @map("provider_ref")
+  requestedById String?    @map("requested_by_id")
+  processedAt DateTime?    @map("processed_at") @db.Timestamptz(3)
+  failureReason String?    @map("failure_reason")
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@index([paymentId])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("refunds")
+}
+
+// ---------------------------------------------------------------------------
+// NOTIFICATIONS
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  type      String
+  title     String
+  body      String
+  data      Json?
+  readAt    DateTime? @map("read_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  userId    String              @map("user_id")
+  channel   NotificationChannel
+  /// Notification family, e.g. `booking`, `payment`, `reminder`.
+  category  String
+  enabled   Boolean             @default(true)
+  createdAt DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, channel, category])
+  @@map("notification_preferences")
+}
+
+/// Transactional outbox. Dispatch is a separate job reading this table, so a
+/// delivery failure is retryable and auditable instead of lost in a request.
+model NotificationOutbox {
+  id         String              @id @default(cuid())
+  channel    NotificationChannel
+  /// Email address, E.164 phone, or device token depending on `channel`.
+  recipient  String
+  template   String
+  payload    Json
+  status     OutboxStatus        @default(QUEUED)
+  attempts   Int                 @default(0)
+  maxAttempts Int                @default(5) @map("max_attempts")
+  lastError  String?             @map("last_error")
+  /// Earliest time the dispatcher may attempt this row; backoff moves it out.
+  sendAfter  DateTime            @default(now()) @map("send_after") @db.Timestamptz(3)
+  sentAt     DateTime?           @map("sent_at") @db.Timestamptz(3)
+  createdAt  DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([status, sendAfter])
+  @@map("notification_outbox")
+}
+
+// ---------------------------------------------------------------------------
+// ADMINISTRATION
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?  @map("actor_id")
+  actorIp    String?  @map("actor_ip")
+  actorAgent String?  @map("actor_agent")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id")
+  before     Json?
+  after      Json?
+  /// Correlates an audit row with the request that produced it.
+  requestId  String?  @map("request_id")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId, createdAt(sort: Desc)])
+  @@index([actorId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+model Setting {
+  key         String   @id
+  value       Json
+  description String?
+  updatedById String?  @map("updated_by_id")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  updatedBy User? @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("settings")
+}
+
+/// Scheduler bookkeeping: which recurring job ran, when, and how it ended.
+model Job {
+  name        String    @id
+  status      JobStatus @default(IDLE)
+  lastRunAt   DateTime? @map("last_run_at") @db.Timestamptz(3)
+  lastEndedAt DateTime? @map("last_ended_at") @db.Timestamptz(3)
+  lastError   String?   @map("last_error")
+  runCount    Int       @default(0) @map("run_count")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("jobs")
+}
