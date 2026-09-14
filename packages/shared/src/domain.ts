@@ -7,6 +7,10 @@ export type UserStatusValue = 'PENDING_VERIFICATION' | 'ACTIVE' | 'SUSPENDED' | 
 
 export type RoomStatusValue = 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE';
 
+export type PricingModelValue = 'HOURLY' | 'SESSION' | 'PACKAGE';
+
+export type EquipmentConditionValue = 'NEW' | 'GOOD' | 'FAIR' | 'POOR' | 'DAMAGED';
+
 export type BookingStatusValue =
   | 'PENDING_PAYMENT'
   | 'PENDING_APPROVAL'
@@ -33,16 +37,12 @@ export type OccurrenceStatusValue = 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED'
 export type StreamStatusValue = 'IDLE' | 'SCHEDULED' | 'LIVE' | 'ENDED' | 'ERROR';
 
 export type PaymentStatusValue =
-  | 'PENDING'
-  | 'PROCESSING'
-  | 'SUCCESSFUL'
-  | 'FAILED'
-  | 'CANCELLED'
-  | 'REFUNDED';
+  'PENDING' | 'PROCESSING' | 'SUCCESSFUL' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
 
 export type PaymentProviderValue = 'MPESA' | 'STRIPE' | 'CASH' | 'BANK';
 
-export type PaymentPurposeValue = 'BOOKING' | 'RENTAL' | 'DEPOSIT' | 'LATE_FEE' | 'DAMAGE' | 'OTHER';
+export type PaymentPurposeValue =
+  'BOOKING' | 'RENTAL' | 'DEPOSIT' | 'LATE_FEE' | 'DAMAGE' | 'OTHER';
 
 export type JobStatusValue = 'IDLE' | 'RUNNING' | 'SUCCESS' | 'FAILED';
 

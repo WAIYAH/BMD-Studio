@@ -1,8 +1,10 @@
 import { Route, Routes } from 'react-router-dom';
 import { PublicLayout } from '@/layouts/PublicLayout';
+import { EquipmentPage } from '@/pages/EquipmentPage';
 import { HomePage } from '@/pages/HomePage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
+import { ServicesPage } from '@/pages/ServicesPage';
 
 /**
  * Route table. Public routes exist now; authenticated customer and staff route
@@ -14,16 +16,7 @@ export function AppRoutes() {
     <Routes>
       <Route element={<PublicLayout />}>
         <Route index element={<HomePage />} />
-        <Route
-          path="services"
-          element={
-            <PlaceholderPage
-              title="Services & pricing"
-              phase="Phase 4"
-              summary="The service catalogue is configured by studio staff, so this page is built once studio and service management exists."
-            />
-          }
-        />
+        <Route path="services" element={<ServicesPage />} />
         <Route
           path="book"
           element={
@@ -34,16 +27,7 @@ export function AppRoutes() {
             />
           }
         />
-        <Route
-          path="equipment"
-          element={
-            <PlaceholderPage
-              title="Equipment hire"
-              phase="Phase 6"
-              summary="Equipment browsing and rental requests arrive with the inventory module."
-            />
-          }
-        />
+        <Route path="equipment" element={<EquipmentPage />} />
         <Route
           path="shows"
           element={

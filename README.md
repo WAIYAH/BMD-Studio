@@ -13,13 +13,15 @@ implemented there is not implemented.
 
 ## Current status
 
-| Phase                | Status                                                                     |
-| -------------------- | -------------------------------------------------------------------------- |
-| P0 Audit and plan    | **Implemented** — [`plan.md`](plan.md)                                     |
-| P1 Foundation        | **Implemented** — monorepo, API skeleton, client shell, tooling, tests, CI |
-| P2 Database (Prisma) | **Tested** — full schema, migrations, overlap constraints, seed            |
-| P3 Auth and RBAC     | Planned — next                                                             |
-| P4 – P17             | Planned — see [`plan.md`](plan.md) §7                                      |
+| Phase                  | Status                                                                     |
+| ---------------------- | -------------------------------------------------------------------------- |
+| P0 Audit and plan      | **Implemented** — [`plan.md`](plan.md)                                     |
+| P1 Foundation          | **Implemented** — monorepo, API skeleton, client shell, tooling, tests, CI |
+| P2 Database (Prisma)   | **Tested** — full schema, migrations, overlap constraints, seed            |
+| P3 Auth and RBAC       | Planned — next                                                             |
+| P4 Studio and services | **In progress** — public service catalogue API and page                    |
+| P6 Equipment           | **In progress** — public hire catalogue API and page                       |
+| P5, P7 – P17           | Planned — see [`plan.md`](plan.md) §7                                      |
 
 What actually works today: the API boots, serves `/api/v1/health` and
 `/api/v1/health/ready` behind hardened headers, rate limiting, request
@@ -30,8 +32,15 @@ complete and migrated, and double booking is refused by PostgreSQL itself —
 proven by an integration suite that fires ten simultaneous identical bookings
 and asserts exactly one survives.
 
-There is no authentication and no booking API yet — the routes for those modules
-show an honest placeholder naming the phase that delivers them.
+The public Services and Equipment pages read the live catalogue from
+`GET /api/v1/services/catalogue` and `GET /api/v1/equipment/catalogue`. Only
+active services deliverable in an open room are listed, equipment is grouped
+into products with a count of units on the shelf and fit to hire, and asset
+tags, serial numbers and store locations never leave the server.
+
+There is no authentication, no booking or rental API and no staff editing of
+the catalogues yet — the routes for those modules show an honest placeholder
+naming the phase that delivers them.
 
 ---
 

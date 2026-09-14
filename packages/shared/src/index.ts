@@ -4,5 +4,6 @@ export * from './rbac.js';
 export * from './money.js';
 export * from './phone.js';
 export * from './domain.js';
+export * from './catalogue.js';
 export * from './auth.js';
 export * from './dashboard.js';
