@@ -1,14 +1,18 @@
 import { Route, Routes } from 'react-router-dom';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { BookPage } from '@/pages/BookPage';
+import { BookingTermsPage } from '@/pages/BookingTermsPage';
+import { CookiePolicyPage } from '@/pages/CookiePolicyPage';
 import { EquipmentPage } from '@/pages/EquipmentPage';
 import { GalleryDetailPage } from '@/pages/GalleryDetailPage';
 import { GalleryPage } from '@/pages/GalleryPage';
 import { HomePage } from '@/pages/HomePage';
 import { LivePage } from '@/pages/LivePage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
+import { PrivacyPolicyPage } from '@/pages/PrivacyPolicyPage';
 import { ServicesPage } from '@/pages/ServicesPage';
 import { ShowsPage } from '@/pages/ShowsPage';
+import { TermsPage } from '@/pages/TermsPage';
 import { VisitPage } from '@/pages/VisitPage';
 
 /**
@@ -23,6 +27,10 @@ export function AppRoutes() {
         <Route path="services" element={<ServicesPage />} />
         <Route path="book" element={<BookPage />} />
         <Route path="visit" element={<VisitPage />} />
+        <Route path="privacy" element={<PrivacyPolicyPage />} />
+        <Route path="terms" element={<TermsPage />} />
+        <Route path="cookies" element={<CookiePolicyPage />} />
+        <Route path="booking-terms" element={<BookingTermsPage />} />
         <Route path="equipment" element={<EquipmentPage />} />
         <Route path="shows" element={<ShowsPage />} />
         <Route path="live" element={<LivePage />} />

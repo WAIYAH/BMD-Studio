@@ -3,6 +3,7 @@ import { equipmentRouter } from './equipment.routes.js';
 import { healthRouter } from './health.routes.js';
 import { mediaRouter } from './media.routes.js';
 import { onAirRouter } from './on-air.routes.js';
+import { policiesRouter } from './policies.routes.js';
 import { servicesRouter } from './services.routes.js';
 import { showsRouter } from './shows.routes.js';
 import { streamsRouter } from './streams.routes.js';
@@ -26,6 +27,7 @@ export const apiRouter: Router = Router();
 
 apiRouter.use('/health', healthRouter);
 apiRouter.use('/studios', studiosRouter);
+apiRouter.use('/policies', policiesRouter);
 apiRouter.use('/services', servicesRouter);
 apiRouter.use('/equipment', equipmentRouter);
 apiRouter.use('/shows', showsRouter);

@@ -8,5 +8,6 @@ export * from './catalogue.js';
 export * from './broadcast.js';
 export * from './media.js';
 export * from './studio.js';
+export * from './policies.js';
 export * from './auth.js';
 export * from './dashboard.js';

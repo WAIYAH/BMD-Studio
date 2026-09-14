@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Radio } from 'lucide-react';
 import { OnAirIndicator } from '@/features/broadcast/OnAirIndicator';
+import { LEGAL_PAGES } from '@/features/legal/entity';
 import { cn } from '@/lib/cn';
 
 const NAV = [
@@ -157,9 +158,20 @@ export function PublicLayout() {
         </div>
 
         <div className="border-t border-ink-800">
-          <p className="mx-auto max-w-7xl px-4 py-5 text-xs text-ink-400 sm:px-6 lg:px-8">
-            &copy; {new Date().getFullYear()} B.M.D Studio. All rights reserved.
-          </p>
+          <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-5 text-xs text-ink-400 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+            <p>&copy; {new Date().getFullYear()} B.M.D Studio. All rights reserved.</p>
+            <nav aria-label="Legal">
+              <ul className="flex flex-wrap gap-x-5 gap-y-2">
+                {LEGAL_PAGES.map((page) => (
+                  <li key={page.to}>
+                    <Link to={page.to} className="transition-colors hover:text-white">
+                      {page.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </div>
         </div>
       </footer>
     </div>
