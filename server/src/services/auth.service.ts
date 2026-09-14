@@ -24,14 +24,16 @@ import type { AuthenticatedUser } from '../types/express.js';
  */
 const ROTATION_GRACE_MS = 30_000;
 
-const REVOKE_REASON = {
+export const REVOKE_REASON = {
   ROTATED: 'rotated',
   LOGOUT: 'logout',
   REUSE_DETECTED: 'reuse_detected',
   ACCOUNT_INACTIVE: 'account_inactive',
+  PASSWORD_CHANGED: 'password_changed',
+  REVOKED_BY_USER: 'revoked_by_user',
 } as const;
 
-const userWithGrants = {
+export const userWithGrants = {
   roles: {
     select: {
       role: {
@@ -126,7 +128,7 @@ async function issueSession(
  * of its rotations. Rows already retired by rotation are re-labelled too, which
  * is what makes access tokens minted from them stop working at once.
  */
-async function revokeFamily(familyId: string, reason: string): Promise<void> {
+export async function revokeFamily(familyId: string, reason: string): Promise<void> {
   const now = new Date();
   await prisma.$transaction([
     prisma.session.updateMany({
@@ -168,7 +170,14 @@ export async function register(input: RegisterData, ctx: RequestContext): Promis
       const issued = await issueSession(tx, user, ctx);
       await tx.auditLog.create({
         data: auditRow(
-          { action: 'auth.register', entityType: 'user', entityId: user.id, actorId: user.id },
+          {
+            action: 'auth.register',
+            entityType: 'user',
+            entityId: user.id,
+            actorId: user.id,
+            // Evidence that the Terms of Use and Privacy Policy were accepted.
+            after: { acceptedTerms: input.acceptTerms },
+          },
           ctx,
         ),
       });
@@ -313,7 +322,12 @@ export async function logout(refreshToken: string | undefined, ctx: RequestConte
   await revokeFamily(session.familyId, REVOKE_REASON.LOGOUT);
   await prisma.auditLog.create({
     data: auditRow(
-      { action: 'auth.logout', entityType: 'user', entityId: session.userId, actorId: session.userId },
+      {
+        action: 'auth.logout',
+        entityType: 'user',
+        entityId: session.userId,
+        actorId: session.userId,
+      },
       ctx,
     ),
   });

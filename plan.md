@@ -2,7 +2,7 @@
 
 > Source of truth for architecture and delivery sequence.
 > Status legend: `PLANNED` · `IN PROGRESS` · `IMPLEMENTED` · `TESTED` · `PRODUCTION READY`
-> Last updated: 2026-09-14 (public side of shows/schedule, ON AIR and live streams, and galleries implemented and tested)
+> Last updated: 2026-09-14 (sign-in, registration and the customer account area implemented and tested)
 
 ---
 
@@ -528,7 +528,7 @@ short of that is reported as `IN PROGRESS`, never as implemented.
 | P0 Audit and plan           | IMPLEMENTED |
 | P1 Foundation               | IMPLEMENTED |
 | P2 Database                 | TESTED      |
-| P3 Auth and RBAC            | PLANNED     |
+| P3 Auth and RBAC            | IN PROGRESS |
 | P4 Studio and services      | IN PROGRESS |
 | P5 Booking and availability | PLANNED     |
 | P6 Equipment                | IN PROGRESS |
@@ -537,7 +537,7 @@ short of that is reported as `IN PROGRESS`, never as implemented.
 | P9 Photography and media    | IN PROGRESS |
 | P10 Payments                | PLANNED     |
 | P11 Notifications           | PLANNED     |
-| P12 Customer portal         | PLANNED     |
+| P12 Customer portal         | IN PROGRESS |
 | P13 Admin dashboard         | PLANNED     |
 | P14 Reports                 | PLANNED     |
 | P15 Security hardening      | PLANNED     |

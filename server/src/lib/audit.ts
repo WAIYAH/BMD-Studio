@@ -19,7 +19,10 @@ export interface AuditEntry {
  * Builds an `audit_logs` row. Callers insert it inside the same transaction as
  * the change it records, so an audited mutation can never commit unrecorded.
  */
-export function auditRow(entry: AuditEntry, ctx: RequestContext): Prisma.AuditLogUncheckedCreateInput {
+export function auditRow(
+  entry: AuditEntry,
+  ctx: RequestContext,
+): Prisma.AuditLogUncheckedCreateInput {
   return {
     action: entry.action,
     entityType: entry.entityType,

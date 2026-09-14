@@ -1,4 +1,9 @@
-import axios, { AxiosError, type AxiosInstance, type AxiosRequestConfig } from 'axios';
+import axios, {
+  AxiosError,
+  type AxiosInstance,
+  type AxiosRequestConfig,
+  type InternalAxiosRequestConfig,
+} from 'axios';
 import {
   API_ERROR_CODES,
   API_PREFIX,
@@ -6,6 +11,7 @@ import {
   type ApiFailure,
   type ApiFieldError,
   type ApiSuccess,
+  type AuthSession,
   type PaginationMeta,
 } from '@bmd/shared';
 
@@ -111,6 +117,89 @@ function toApiClientError(error: unknown): ApiClientError {
     status: 0,
   });
 }
+
+// ---------------------------------------------------------------------------
+// Session renewal
+// ---------------------------------------------------------------------------
+
+type SessionListener = (session: AuthSession | null) => void;
+
+let sessionListener: SessionListener | null = null;
+
+/**
+ * Lets the auth provider hear about renewals and forced sign-outs, whichever
+ * request happened to cause them.
+ */
+export function setSessionListener(listener: SessionListener | null): void {
+  sessionListener = listener;
+}
+
+const AUTH_ENDPOINT = /^\/auth\//;
+const CONFLICT_RETRIES = 2;
+
+let renewal: Promise<AuthSession | null> | null = null;
+
+const pause = (ms: number) =>
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
+async function renew(attempt = 0): Promise<AuthSession | null> {
+  try {
+    const response = await http.post<ApiSuccess<AuthSession>>('/auth/refresh');
+    const session = response.data.data;
+    accessToken = session.accessToken;
+    sessionListener?.(session);
+    return session;
+  } catch (error) {
+    const failure = toApiClientError(error);
+    // Another tab renewed a moment ago; the browser already holds its new cookie.
+    if (failure.code === API_ERROR_CODES.CONFLICT && attempt < CONFLICT_RETRIES) {
+      await pause(300);
+      return renew(attempt + 1);
+    }
+    if (failure.status === 401 || failure.status === 403) {
+      accessToken = null;
+      sessionListener?.(null);
+      return null;
+    }
+    throw failure;
+  }
+}
+
+/**
+ * Exchanges the httpOnly refresh cookie for a new access token, resolving null
+ * when there is no valid session. Concurrent callers share one request: the
+ * server rotates the cookie on every renewal, so parallel renewals would trip
+ * its reuse detection.
+ */
+export function refreshSession(): Promise<AuthSession | null> {
+  renewal ??= renew().finally(() => {
+    renewal = null;
+  });
+  return renewal;
+}
+
+type RetryableConfig = InternalAxiosRequestConfig & { authRetried?: boolean };
+
+// An expired access token is renewed once, then the original request replayed.
+http.interceptors.response.use(undefined, async (error: unknown) => {
+  if (!axios.isAxiosError(error) || !error.config) throw error;
+
+  const config = error.config as RetryableConfig;
+  const payload = error.response?.data as Partial<ApiFailure> | undefined;
+  const expired =
+    error.response?.status === 401 && payload?.error?.code === API_ERROR_CODES.TOKEN_EXPIRED;
+  if (!expired || config.authRetried || AUTH_ENDPOINT.test(config.url ?? '')) throw error;
+
+  const session = await refreshSession();
+  if (!session) throw error;
+  return http.request({ ...config, authRetried: true } as RetryableConfig);
+});
+
+// ---------------------------------------------------------------------------
+// Requests
+// ---------------------------------------------------------------------------
 
 /** Performs a request and unwraps the success envelope, or throws ApiClientError. */
 export async function apiRequest<T>(config: AxiosRequestConfig): Promise<T> {

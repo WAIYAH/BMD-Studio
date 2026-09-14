@@ -74,6 +74,8 @@ export interface DashboardDeliverable {
   bookingReference: string;
   dueAt: string | null;
   deliveredAt: string | null;
+  /** Set only when the deliverable's gallery is published and can be opened. */
+  gallerySlug: string | null;
 }
 
 export interface CustomerDashboard {

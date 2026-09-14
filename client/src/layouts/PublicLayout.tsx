@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Radio } from 'lucide-react';
+import { Radio, UserRound } from 'lucide-react';
+import { useAuth } from '@/features/auth/auth-context';
 import { OnAirIndicator } from '@/features/broadcast/OnAirIndicator';
 import { LEGAL_PAGES } from '@/features/legal/entity';
 import { cn } from '@/lib/cn';
@@ -14,6 +15,47 @@ const NAV = [
   { to: '/gallery', label: 'Gallery' },
   { to: '/visit', label: 'Visit us' },
 ];
+
+/**
+ * Sign in, or the way back to the account once signed in. Nothing is shown
+ * while the session is still being checked, so the header never flickers
+ * between the two.
+ */
+function AccountEntry() {
+  const { status, user } = useAuth();
+
+  if (status === 'authenticated' && user) {
+    const initials = `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+    return (
+      <Link
+        to="/account"
+        className="flex items-center gap-2 rounded-full border border-ink-200 p-1 text-sm font-semibold text-ink-950 transition-colors hover:bg-ink-50 sm:pr-3"
+      >
+        <span
+          aria-hidden
+          className="grid size-8 place-items-center rounded-full bg-ink-950 text-xs font-bold text-white"
+        >
+          {initials}
+        </span>
+        <span className="sr-only sm:not-sr-only">My account</span>
+      </Link>
+    );
+  }
+
+  if (status === 'anonymous') {
+    return (
+      <Link
+        to="/login"
+        className="flex items-center gap-1.5 rounded-full px-2 py-2 text-sm font-semibold text-ink-950 transition-colors hover:bg-ink-100 sm:px-3"
+      >
+        <UserRound aria-hidden className="size-5" />
+        <span className="sr-only sm:not-sr-only">Sign in</span>
+      </Link>
+    );
+  }
+
+  return null;
+}
 
 /** A new page opens at the top; in-page `#section` links keep their own scrolling. */
 function useScrollToTopOnNavigate(): void {
@@ -70,7 +112,7 @@ export function PublicLayout() {
 
           <div className="flex items-center gap-2">
             <OnAirIndicator />
-            {/* Authentication lands in Phase 3; no fake session UI before then. */}
+            <AccountEntry />
             <Link
               to="/book"
               className="rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700"

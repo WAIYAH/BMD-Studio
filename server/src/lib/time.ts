@@ -111,7 +111,11 @@ export function zonedDay(instant: Date, timeZone: string): ZonedDay {
 export function shiftZonedDay(day: ZonedDay, offsetDays: number, timeZone: string): ZonedDay {
   const calendar = new Date(Date.UTC(day.year, day.month - 1, day.day + offsetDays, 12));
   // Noon in UTC lands on the same calendar date in every zone within ±12h.
-  const { year, month, day: d } = {
+  const {
+    year,
+    month,
+    day: d,
+  } = {
     year: calendar.getUTCFullYear(),
     month: calendar.getUTCMonth() + 1,
     day: calendar.getUTCDate(),

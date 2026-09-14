@@ -38,6 +38,8 @@ export default defineConfig({
       DATABASE_URL: testDatabaseUrl,
       // A fixed origin so media URL assertions do not depend on a developer's `.env`.
       MEDIA_PUBLIC_BASE_URL: 'https://media.test.invalid',
+      // Test-only signing key; it signs tokens that never leave the test run.
+      JWT_ACCESS_SECRET: 'test-only-access-token-signing-key-000000000000',
     },
     // Integration tests share one database; running files serially avoids
     // cross-suite truncation races.

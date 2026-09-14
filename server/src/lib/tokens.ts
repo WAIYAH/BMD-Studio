@@ -30,8 +30,7 @@ export function signAccessToken(claims: AccessClaims): Promise<string> {
 }
 
 export type AccessTokenResult =
-  | { ok: true; claims: AccessClaims }
-  | { ok: false; reason: 'expired' | 'invalid' };
+  { ok: true; claims: AccessClaims } | { ok: false; reason: 'expired' | 'invalid' };
 
 export async function verifyAccessToken(token: string): Promise<AccessTokenResult> {
   try {

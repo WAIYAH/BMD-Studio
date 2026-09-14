@@ -2,7 +2,7 @@ import type { CookieOptions, Request, Response } from 'express';
 import { API_ERROR_CODES, API_PREFIX, type LoginData, type RegisterData } from '@bmd/shared';
 import { env } from '../config/env.js';
 import { ApiError } from '../lib/api-error.js';
-import type { RequestContext } from '../lib/audit.js';
+import { requestContext as contextOf } from '../lib/request-context.js';
 import { sendData } from '../lib/respond.js';
 import * as authService from '../services/auth.service.js';
 
@@ -22,10 +22,6 @@ function refreshCookieOptions(expires?: Date): CookieOptions {
     ...(env.cookieDomain ? { domain: env.cookieDomain } : {}),
     ...(expires ? { expires } : {}),
   };
-}
-
-function contextOf(req: Request): RequestContext {
-  return { ip: req.ip, userAgent: req.get('user-agent'), requestId: req.requestId };
 }
 
 function readRefreshCookie(req: Request): string | undefined {

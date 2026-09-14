@@ -55,6 +55,9 @@ export const registerSchema = z.object({
   email: emailSchema,
   phone: optionalPhoneSchema,
   password: passwordSchema,
+  acceptTerms: z.literal(true, {
+    error: 'Accept the Terms of Use and Privacy Policy to create an account.',
+  }),
 });
 
 export const loginSchema = z.object({
@@ -63,10 +66,25 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Enter your password.').max(PASSWORD_MAX_LENGTH),
 });
 
+/** Email is not editable here: changing it needs verification by email (Phase 11). */
+export const profileUpdateSchema = z.object({
+  firstName: nameSchema('First name'),
+  lastName: nameSchema('Last name'),
+  phone: optionalPhoneSchema,
+});
+
+export const passwordChangeSchema = z.object({
+  currentPassword: z.string().min(1, 'Enter your current password.').max(PASSWORD_MAX_LENGTH),
+  newPassword: passwordSchema,
+});
+
 export type RegisterInput = z.input<typeof registerSchema>;
 export type RegisterData = z.output<typeof registerSchema>;
 export type LoginInput = z.input<typeof loginSchema>;
 export type LoginData = z.output<typeof loginSchema>;
+export type ProfileUpdateInput = z.input<typeof profileUpdateSchema>;
+export type ProfileUpdateData = z.output<typeof profileUpdateSchema>;
+export type PasswordChangeData = z.output<typeof passwordChangeSchema>;
 
 /** The signed-in principal as the client sees it. */
 export interface AuthUser {

@@ -10,10 +10,10 @@
 
 The brief asks for two dashboards:
 
-| Dashboard      | Audience                                                               | Route      | API                       |
-| -------------- | ---------------------------------------------------------------------- | ---------- | ------------------------- |
-| **User**       | every signed-in account (customers, and staff for their own bookings) | `/account` | `GET /api/v1/me/dashboard`    |
-| **Admin/Ops**  | staff roles holding `dashboard:view`                                    | `/admin`   | `GET /api/v1/admin/dashboard` |
+| Dashboard     | Audience                                                              | Route      | API                           |
+| ------------- | --------------------------------------------------------------------- | ---------- | ----------------------------- |
+| **User**      | every signed-in account (customers, and staff for their own bookings) | `/account` | `GET /api/v1/me/dashboard`    |
+| **Admin/Ops** | staff roles holding `dashboard:view`                                  | `/admin`   | `GET /api/v1/admin/dashboard` |
 
 Both depend on knowing **who** is asking, and the admin one depends on **what
 they may see**. At the time of writing, authentication (P3) did not exist. A
@@ -55,13 +55,13 @@ panel renders an honest empty state.
 
 ### 3.1 Endpoints
 
-| Method | Path             | Auth             | Notes                                                           |
-| ------ | ---------------- | ---------------- | --------------------------------------------------------------- |
-| POST   | `/auth/register` | public, strict RL | Creates a `CUSTOMER`, starts a session, returns token + user   |
-| POST   | `/auth/login`    | public, strict RL | Email + password; returns token + user, sets refresh cookie    |
-| POST   | `/auth/refresh`  | refresh cookie   | Rotates the refresh token, returns a new access token + user   |
-| POST   | `/auth/logout`   | refresh cookie   | Revokes the whole session family, clears the cookie            |
-| GET    | `/auth/me`       | Bearer           | Current principal with roles and permissions                   |
+| Method | Path             | Auth              | Notes                                                        |
+| ------ | ---------------- | ----------------- | ------------------------------------------------------------ |
+| POST   | `/auth/register` | public, strict RL | Creates a `CUSTOMER`, starts a session, returns token + user |
+| POST   | `/auth/login`    | public, strict RL | Email + password; returns token + user, sets refresh cookie  |
+| POST   | `/auth/refresh`  | refresh cookie    | Rotates the refresh token, returns a new access token + user |
+| POST   | `/auth/logout`   | refresh cookie    | Revokes the whole session family, clears the cookie          |
+| GET    | `/auth/me`       | Bearer            | Current principal with roles and permissions                 |
 
 ### 3.2 Tokens and sessions
 
@@ -96,16 +96,16 @@ panel renders an honest empty state.
 
 Guard: `requireAuth`. Every query is scoped to the caller.
 
-| Block             | Content                                                                                                        | Source                                        |
-| ----------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| `profile`         | name, email, phone, status, email verified?, member since, roles                                               | `users`, `user_roles`                         |
-| `stats`           | upcoming bookings · active rentals · **balance due** · total paid · unread notifications                       | aggregates below                              |
-| `upcomingBookings`| next 5 holding bookings (`PENDING_*`, `CONFIRMED`, `IN_PROGRESS`) ending after now: room, service, window, status, total, paid | `bookings` + successful `payments` |
-| `recentBookings`  | last 5 bookings that have ended or were cancelled                                                              | `bookings`                                    |
-| `activeRentals`   | rentals `PENDING_APPROVAL`/`APPROVED`/`CHECKED_OUT`/`OVERDUE`, item names, window, overdue flag                | `equipment_rentals` + items                   |
-| `recentPayments`  | last 5 payments: reference, purpose, provider, status, amount                                                  | `payments`                                    |
-| `notifications`   | latest 5 in-app notifications                                                                                  | `notifications`                               |
-| `deliverables`    | latest 5 deliverables on the caller's bookings, pending or delivered                                          | `booking_deliverables`                        |
+| Block              | Content                                                                                                                        | Source                             |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
+| `profile`          | name, email, phone, status, email verified?, member since, roles                                                               | `users`, `user_roles`              |
+| `stats`            | upcoming bookings · active rentals · **balance due** · total paid · unread notifications                                       | aggregates below                   |
+| `upcomingBookings` | next 5 holding bookings (`PENDING_*`, `CONFIRMED`, `IN_PROGRESS`) ending after now: room, service, window, status, total, paid | `bookings` + successful `payments` |
+| `recentBookings`   | last 5 bookings that have ended or were cancelled                                                                              | `bookings`                         |
+| `activeRentals`    | rentals `PENDING_APPROVAL`/`APPROVED`/`CHECKED_OUT`/`OVERDUE`, item names, window, overdue flag                                | `equipment_rentals` + items        |
+| `recentPayments`   | last 5 payments: reference, purpose, provider, status, amount                                                                  | `payments`                         |
+| `notifications`    | latest 5 in-app notifications                                                                                                  | `notifications`                    |
+| `deliverables`     | latest 5 deliverables on the caller's bookings, pending or delivered                                                           | `booking_deliverables`             |
 
 **Balance due** = Σ over the caller's billable bookings (`PENDING_PAYMENT`,
 `PENDING_APPROVAL`, `CONFIRMED`, `IN_PROGRESS`, `COMPLETED`) and rentals
@@ -132,17 +132,17 @@ Guard: `requirePermission('dashboard:view')`. Response:
 }
 ```
 
-| Section    | Required permission | Content                                                                                                                   |
-| ---------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `onAir`    | `show:read`         | occurrences `LIVE` now · `SCHEDULED` covering now (not on air) · next 3 airings · live streams with platforms              |
-| `bookings` | `booking:read:any`  | today's bookings (list + count) · pending approval (count + 5) · pending payment count · next-7-days count · today by status |
-| `rooms`    | `booking:read:any`  | per active room today: open minutes (operating hours − closed days), booked minutes clipped to opening hours, utilisation % |
-| `rentals`  | `rental:read:any`   | pending approval · checked out · overdue (`OVERDUE`, or `CHECKED_OUT` past `ends_at`) · due back today (list)              |
-| `equipment`| `equipment:read`    | units by status · units in `POOR`/`DAMAGED` condition · open maintenance tickets                                          |
-| `revenue`  | `payment:read:any`  | successful today / last 7 days / month-to-date · pending count · failed today · pending refunds · 14-day daily series     |
-| `users`    | `user:read`         | total · customers · staff · new in 7 days · suspended/disabled                                                             |
-| `activity` | `audit:read`        | latest 10 audit entries with actor                                                                                         |
-| `system`   | `settings:write`    | notification outbox queued/failed · scheduler jobs with last run and status                                                |
+| Section     | Required permission | Content                                                                                                                      |
+| ----------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `onAir`     | `show:read`         | occurrences `LIVE` now · `SCHEDULED` covering now (not on air) · next 3 airings · live streams with platforms                |
+| `bookings`  | `booking:read:any`  | today's bookings (list + count) · pending approval (count + 5) · pending payment count · next-7-days count · today by status |
+| `rooms`     | `booking:read:any`  | per active room today: open minutes (operating hours − closed days), booked minutes clipped to opening hours, utilisation %  |
+| `rentals`   | `rental:read:any`   | pending approval · checked out · overdue (`OVERDUE`, or `CHECKED_OUT` past `ends_at`) · due back today (list)                |
+| `equipment` | `equipment:read`    | units by status · units in `POOR`/`DAMAGED` condition · open maintenance tickets                                             |
+| `revenue`   | `payment:read:any`  | successful today / last 7 days / month-to-date · pending count · failed today · pending refunds · 14-day daily series        |
+| `users`     | `user:read`         | total · customers · staff · new in 7 days · suspended/disabled                                                               |
+| `activity`  | `audit:read`        | latest 10 audit entries with actor                                                                                           |
+| `system`    | `settings:write`    | notification outbox queued/failed · scheduler jobs with last run and status                                                  |
 
 What each role therefore sees (from the seeded grants):
 
@@ -209,30 +209,30 @@ client/src/
 
 ## 8. Tests
 
-| Suite                                  | Proves                                                                                                                                                   |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `server/tests/integration/auth.test.ts`| register valid / duplicate / weak; login ok / wrong password / unknown email / suspended; `me` with and without token; refresh rotation; **reuse of a rotated token revokes the family**; logout kills refresh _and_ outstanding access tokens; suspension takes effect immediately |
+| Suite                                        | Proves                                                                                                                                                                                                                                                                                                                                      |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `server/tests/integration/auth.test.ts`      | register valid / duplicate / weak; login ok / wrong password / unknown email / suspended; `me` with and without token; refresh rotation; **reuse of a rotated token revokes the family**; logout kills refresh _and_ outstanding access tokens; suspension takes effect immediately                                                         |
 | `server/tests/integration/dashboard.test.ts` | 401 unauthenticated; **customer gets 403 on admin**; customer sees only own bookings; balance due arithmetic; super admin receives every section with correct counts; FINANCE gets revenue but not users/activity/system; PRESENTER gets no bookings; ON AIR distinguishes `LIVE` from scheduled-now; revenue series buckets by Nairobi day |
-| `server/tests/unit/time.test.ts`       | Nairobi day boundaries and weekday at UTC edges                                                                                                          |
-| client `*.test.tsx`                    | guards redirect / forbid; login surfaces invalid credentials; both dashboards render data, empty states, and only the sections present                  |
+| `server/tests/unit/time.test.ts`             | Nairobi day boundaries and weekday at UTC edges                                                                                                                                                                                                                                                                                             |
+| client `*.test.tsx`                          | guards redirect / forbid; login surfaces invalid credentials; both dashboards render data, empty states, and only the sections present                                                                                                                                                                                                      |
 
 ---
 
 ## 9. Delivery checklist
 
-| #  | Item                                                          | Status |
-| -- | ------------------------------------------------------------- | ------ |
-| 1  | Env: JWT secret/TTL, refresh TTL, cookie config               | see §10 |
-| 2  | Server auth: tokens, passwords, service, middleware, routes   | see §10 |
-| 3  | Shared auth + dashboard contracts                             | see §10 |
-| 4  | `GET /me/dashboard`                                           | see §10 |
-| 5  | `GET /admin/dashboard` with permission-gated sections         | see §10 |
-| 6  | Integration + unit tests                                      | see §10 |
-| 7  | Client auth provider, refresh interceptor, guards, login/register | see §10 |
-| 8  | Dashboard shell + user dashboard                              | see §10 |
-| 9  | Admin dashboard                                               | see §10 |
-| 10 | Client tests, typecheck, lint, build                          | see §10 |
-| 11 | plan.md / README status updates                               | see §10 |
+| #   | Item                                                              | Status  |
+| --- | ----------------------------------------------------------------- | ------- |
+| 1   | Env: JWT secret/TTL, refresh TTL, cookie config                   | see §10 |
+| 2   | Server auth: tokens, passwords, service, middleware, routes       | see §10 |
+| 3   | Shared auth + dashboard contracts                                 | see §10 |
+| 4   | `GET /me/dashboard`                                               | see §10 |
+| 5   | `GET /admin/dashboard` with permission-gated sections             | see §10 |
+| 6   | Integration + unit tests                                          | see §10 |
+| 7   | Client auth provider, refresh interceptor, guards, login/register | see §10 |
+| 8   | Dashboard shell + user dashboard                                  | see §10 |
+| 9   | Admin dashboard                                                   | see §10 |
+| 10  | Client tests, typecheck, lint, build                              | see §10 |
+| 11  | plan.md / README status updates                                   | see §10 |
 
 ---
 

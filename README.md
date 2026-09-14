@@ -13,24 +13,25 @@ implemented there is not implemented.
 
 ## Current status
 
-| Phase                    | Status                                                                           |
-| ------------------------ | -------------------------------------------------------------------------------- |
-| P0 Audit and plan        | **Implemented** — [`plan.md`](plan.md)                                           |
-| P1 Foundation            | **Implemented** — monorepo, API skeleton, client shell, tooling, tests, CI       |
-| P2 Database (Prisma)     | **Tested** — full schema, migrations, overlap constraints, seed                  |
-| P3 Auth and RBAC         | Planned — next                                                                   |
-| P4 Studio and services   | **In progress** — public service catalogue API and page                          |
-| P6 Equipment             | **In progress** — public hire catalogue API and page                             |
-| P7 Shows and schedule    | **In progress** — occurrence expansion job, public schedule API and page         |
-| P8 Streaming and ON AIR  | **In progress** — public ON AIR and live-stream API, header indicator, live page |
-| P9 Photography and media | **In progress** — public published-gallery API and pages                         |
-| P5, P10 – P17            | Planned — see [`plan.md`](plan.md) §7                                            |
+| Phase                    | Status                                                                                                |
+| ------------------------ | ----------------------------------------------------------------------------------------------------- |
+| P0 Audit and plan        | **Implemented** — [`plan.md`](plan.md)                                                                |
+| P1 Foundation            | **Implemented** — monorepo, API skeleton, client shell, tooling, tests, CI                            |
+| P2 Database (Prisma)     | **Tested** — full schema, migrations, overlap constraints, seed                                       |
+| P3 Auth and RBAC         | **In progress** — sign-in, registration, rotating sessions, permission checks; staff admin to come    |
+| P4 Studio and services   | **In progress** — public service catalogue API and page                                               |
+| P6 Equipment             | **In progress** — public hire catalogue API and page                                                  |
+| P7 Shows and schedule    | **In progress** — occurrence expansion job, public schedule API and page                              |
+| P8 Streaming and ON AIR  | **In progress** — public ON AIR and live-stream API, header indicator, live page                      |
+| P9 Photography and media | **In progress** — public published-gallery API and pages                                              |
+| P12 Customer portal      | **In progress** — account dashboard, bookings, hires, payments, deliverables, notifications, settings |
+| P5, P10, P11, P13 – P17  | Planned — see [`plan.md`](plan.md) §7                                                                 |
 
 What actually works today: the API boots, serves `/api/v1/health` and
 `/api/v1/health/ready` behind hardened headers, rate limiting, request
 correlation ids and a central error handler, and reports a real round-tripped
-database check in its readiness probe; the web client builds, routes, and
-renders a real connection panel driven by the live API. The database schema is
+database check in its readiness probe; the web client builds and routes, and
+every public page reads live data from the API. The database schema is
 complete and migrated, and double booking is refused by PostgreSQL itself —
 proven by an integration suite that fires ten simultaneous identical bookings
 and asserts exactly one survives.
@@ -51,12 +52,18 @@ watch links and YouTube or Facebook player URLs, never ingest URLs or stream
 keys. The Gallery pages read `GET /api/v1/media/galleries`, which returns public
 files in published galleries only.
 
-There is no authentication, no booking or rental API, and no staff editing of
-the catalogues, shows, streams or media yet. Nothing can start an airing, run a
-stream or upload a file until Phase 3 lands, so the ON AIR indicator stays dark
-and the gallery stays empty until then. The YouTube and Facebook adapters and
-viewer statistics are not built. The booking route shows an honest placeholder
-naming the phase that delivers it.
+Customers can create an account and sign in. The access token lives only in
+memory and the refresh token in a rotating httpOnly cookie: replaying a retired
+refresh token ends that sign-in everywhere, and changing the password signs out
+every other device. The account area at `/account` — overview, bookings,
+equipment hire, payments, deliverables, notifications, and profile & security
+with signed-in devices and notification preferences — reads only the signed-in
+customer's own records from `/api/v1/me`.
+
+There is no booking, rental or online payment flow, no password reset or email
+verification, and no staff admin area yet, so the account lists stay empty until
+those modules write to them. Staff editing of the catalogues, shows, streams and
+media, the YouTube and Facebook adapters and viewer statistics are not built.
 
 ---
 
