@@ -36,6 +36,8 @@ export default defineConfig({
       // Every Prisma client created inside the suite must reach the throwaway
       // database, never the development one.
       DATABASE_URL: testDatabaseUrl,
+      // A fixed origin so media URL assertions do not depend on a developer's `.env`.
+      MEDIA_PUBLIC_BASE_URL: 'https://media.test.invalid',
     },
     // Integration tests share one database; running files serially avoids
     // cross-suite truncation races.

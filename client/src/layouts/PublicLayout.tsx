@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { Radio } from 'lucide-react';
+import { OnAirIndicator } from '@/features/broadcast/OnAirIndicator';
 import { cn } from '@/lib/cn';
 
 const NAV = [
@@ -53,6 +54,7 @@ export function PublicLayout() {
           </nav>
 
           <div className="flex items-center gap-2">
+            <OnAirIndicator />
             {/* Authentication lands in Phase 3; no fake session UI before then. */}
             <NavLink
               to="/book"

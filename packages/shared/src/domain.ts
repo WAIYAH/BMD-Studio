@@ -36,6 +36,10 @@ export type OccurrenceStatusValue = 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED'
 
 export type StreamStatusValue = 'IDLE' | 'SCHEDULED' | 'LIVE' | 'ENDED' | 'ERROR';
 
+export type StreamPlatformValue = 'YOUTUBE' | 'FACEBOOK' | 'CUSTOM_RTMP';
+
+export type GalleryTypeValue = 'PHOTO' | 'VIDEO' | 'PORTFOLIO';
+
 export type PaymentStatusValue =
   'PENDING' | 'PROCESSING' | 'SUCCESSFUL' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
 

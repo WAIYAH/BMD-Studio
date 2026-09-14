@@ -50,6 +50,13 @@ const envSchema = z.object({
 
   MAX_UPLOAD_MB: z.coerce.number().int().positive().default(50),
 
+  // Media (Phase 9). The public origin browsers load PUBLIC files from — a CDN
+  // or the bucket's public endpoint. Unset means no media can be published.
+  MEDIA_PUBLIC_BASE_URL: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().url().optional(),
+  ),
+
   // Payments. `mock` never runs in production — enforced below.
   PAYMENTS_DRIVER: z.enum(['daraja', 'mock']).default('mock'),
 });
@@ -74,7 +81,9 @@ if (raw.NODE_ENV === 'production' && raw.PAYMENTS_DRIVER === 'mock') {
 }
 
 if (raw.NODE_ENV === 'production' && raw.JWT_ACCESS_SECRET.startsWith('replace-me')) {
-  throw new Error('JWT_ACCESS_SECRET still holds the .env.example placeholder. Generate a real secret.');
+  throw new Error(
+    'JWT_ACCESS_SECRET still holds the .env.example placeholder. Generate a real secret.',
+  );
 }
 
 const TTL_UNIT_SECONDS = { s: 1, m: 60, h: 3600 } as const;

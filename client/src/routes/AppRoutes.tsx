@@ -1,10 +1,14 @@
 import { Route, Routes } from 'react-router-dom';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { EquipmentPage } from '@/pages/EquipmentPage';
+import { GalleryDetailPage } from '@/pages/GalleryDetailPage';
+import { GalleryPage } from '@/pages/GalleryPage';
 import { HomePage } from '@/pages/HomePage';
+import { LivePage } from '@/pages/LivePage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { ServicesPage } from '@/pages/ServicesPage';
+import { ShowsPage } from '@/pages/ShowsPage';
 
 /**
  * Route table. Public routes exist now; authenticated customer and staff route
@@ -28,36 +32,10 @@ export function AppRoutes() {
           }
         />
         <Route path="equipment" element={<EquipmentPage />} />
-        <Route
-          path="shows"
-          element={
-            <PlaceholderPage
-              title="Shows & schedule"
-              phase="Phase 7"
-              summary="The programme schedule is generated from real show recurrence rules."
-            />
-          }
-        />
-        <Route
-          path="live"
-          element={
-            <PlaceholderPage
-              title="Live"
-              phase="Phase 8"
-              summary="The live page shows genuine ON AIR state and a real stream from the configured provider. Until the streaming integration is connected, no live indicator is shown at all."
-            />
-          }
-        />
-        <Route
-          path="gallery"
-          element={
-            <PlaceholderPage
-              title="Gallery & portfolio"
-              phase="Phase 9"
-              summary="Galleries are served from object storage once the media module is built."
-            />
-          }
-        />
+        <Route path="shows" element={<ShowsPage />} />
+        <Route path="live" element={<LivePage />} />
+        <Route path="gallery" element={<GalleryPage />} />
+        <Route path="gallery/:slug" element={<GalleryDetailPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

@@ -5,5 +5,7 @@ export * from './money.js';
 export * from './phone.js';
 export * from './domain.js';
 export * from './catalogue.js';
+export * from './broadcast.js';
+export * from './media.js';
 export * from './auth.js';
 export * from './dashboard.js';

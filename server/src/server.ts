@@ -1,5 +1,6 @@
 import { createApp } from './app.js';
 import { env } from './config/env.js';
+import { startScheduler } from './jobs/scheduler.js';
 import { logger } from './lib/logger.js';
 import { disconnectPrisma } from './lib/prisma.js';
 
@@ -16,8 +17,12 @@ const server = app.listen(env.PORT, () => {
   );
 });
 
+// Recurring jobs run in-process. Each one tolerates other instances running it too.
+const stopScheduler = startScheduler();
+
 function shutdown(signal: string): void {
   logger.info({ signal }, 'Shutting down');
+  stopScheduler();
   server.close((err) => {
     if (err) {
       logger.error({ err }, 'Error during shutdown');

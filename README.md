@@ -13,15 +13,18 @@ implemented there is not implemented.
 
 ## Current status
 
-| Phase                  | Status                                                                     |
-| ---------------------- | -------------------------------------------------------------------------- |
-| P0 Audit and plan      | **Implemented** — [`plan.md`](plan.md)                                     |
-| P1 Foundation          | **Implemented** — monorepo, API skeleton, client shell, tooling, tests, CI |
-| P2 Database (Prisma)   | **Tested** — full schema, migrations, overlap constraints, seed            |
-| P3 Auth and RBAC       | Planned — next                                                             |
-| P4 Studio and services | **In progress** — public service catalogue API and page                    |
-| P6 Equipment           | **In progress** — public hire catalogue API and page                       |
-| P5, P7 – P17           | Planned — see [`plan.md`](plan.md) §7                                      |
+| Phase                    | Status                                                                           |
+| ------------------------ | -------------------------------------------------------------------------------- |
+| P0 Audit and plan        | **Implemented** — [`plan.md`](plan.md)                                           |
+| P1 Foundation            | **Implemented** — monorepo, API skeleton, client shell, tooling, tests, CI       |
+| P2 Database (Prisma)     | **Tested** — full schema, migrations, overlap constraints, seed                  |
+| P3 Auth and RBAC         | Planned — next                                                                   |
+| P4 Studio and services   | **In progress** — public service catalogue API and page                          |
+| P6 Equipment             | **In progress** — public hire catalogue API and page                             |
+| P7 Shows and schedule    | **In progress** — occurrence expansion job, public schedule API and page         |
+| P8 Streaming and ON AIR  | **In progress** — public ON AIR and live-stream API, header indicator, live page |
+| P9 Photography and media | **In progress** — public published-gallery API and pages                         |
+| P5, P10 – P17            | Planned — see [`plan.md`](plan.md) §7                                            |
 
 What actually works today: the API boots, serves `/api/v1/health` and
 `/api/v1/health/ready` behind hardened headers, rate limiting, request
@@ -38,9 +41,22 @@ active services deliverable in an open room are listed, equipment is grouped
 into products with a count of units on the shelf and fit to hire, and asset
 tags, serial numbers and store locations never leave the server.
 
-There is no authentication, no booking or rental API and no staff editing of
-the catalogues yet — the routes for those modules show an honest placeholder
-naming the phase that delivers them.
+The public side of shows, ON AIR and galleries is in place. A background job
+expands each show's weekly slot into dated airings 28 days ahead — safely
+re-runnable, and reporting a room clash rather than overwriting it — and the
+Shows page reads them from `GET /api/v1/shows` and `/shows/schedule`.
+`GET /api/v1/on-air` reports a show as on air only when an operator has started
+it, never from the clock, and `GET /api/v1/streams/live` publishes only http(s)
+watch links and YouTube or Facebook player URLs, never ingest URLs or stream
+keys. The Gallery pages read `GET /api/v1/media/galleries`, which returns public
+files in published galleries only.
+
+There is no authentication, no booking or rental API, and no staff editing of
+the catalogues, shows, streams or media yet. Nothing can start an airing, run a
+stream or upload a file until Phase 3 lands, so the ON AIR indicator stays dark
+and the gallery stays empty until then. The YouTube and Facebook adapters and
+viewer statistics are not built. The booking route shows an honest placeholder
+naming the phase that delivers it.
 
 ---
 
