@@ -6,12 +6,13 @@ import { onAirRouter } from './on-air.routes.js';
 import { servicesRouter } from './services.routes.js';
 import { showsRouter } from './shows.routes.js';
 import { streamsRouter } from './streams.routes.js';
+import { studiosRouter } from './studios.routes.js';
 
 /**
  * Root API router. Feature routers are mounted here as each phase lands:
  *
  *   Phase 3  /auth /users /roles
- *   Phase 4  /studios /services (public /services/catalogue is live)
+ *   Phase 4  /studios /services (public /studios and /services/catalogue are live)
  *   Phase 5  /availability /bookings
  *   Phase 6  /equipment /equipment-rentals (public /equipment/catalogue is live)
  *   Phase 7  /shows (public line-up and /shows/schedule are live)
@@ -24,6 +25,7 @@ import { streamsRouter } from './streams.routes.js';
 export const apiRouter: Router = Router();
 
 apiRouter.use('/health', healthRouter);
+apiRouter.use('/studios', studiosRouter);
 apiRouter.use('/services', servicesRouter);
 apiRouter.use('/equipment', equipmentRouter);
 apiRouter.use('/shows', showsRouter);

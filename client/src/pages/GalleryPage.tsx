@@ -59,24 +59,24 @@ function GalleryCard({ gallery }: { gallery: PublicGallerySummary }) {
   return (
     <Link
       to={`/gallery/${gallery.slug}`}
-      className="group block overflow-hidden rounded-card border border-navy-100 transition-shadow hover:shadow-md"
+      className="group block overflow-hidden rounded-card border border-ink-100 transition-shadow hover:shadow-md"
     >
-      <div className="aspect-[4/3] bg-navy-50">
+      <div className="aspect-[4/3] bg-ink-50">
         {/* The card's title names the gallery; the cover is decorative. */}
         <MediaThumbnail asset={gallery.cover} alt="" />
       </div>
       <div className="p-4">
         <div className="flex items-center justify-between gap-3">
           <StatusBadge>{GALLERY_TYPE_LABEL[gallery.type]}</StatusBadge>
-          <span className="text-sm text-navy-500">
+          <span className="text-sm text-ink-500">
             {gallery.itemCount} {gallery.itemCount === 1 ? 'item' : 'items'}
           </span>
         </div>
-        <h2 className="mt-3 text-xl font-bold uppercase text-navy-900 group-hover:text-signal-700">
+        <h2 className="mt-3 text-xl font-bold uppercase text-ink-900 group-hover:text-brand-700">
           {gallery.title}
         </h2>
         {gallery.description && (
-          <p className="mt-1 line-clamp-2 text-sm text-navy-600">{gallery.description}</p>
+          <p className="mt-1 line-clamp-2 text-sm text-ink-600">{gallery.description}</p>
         )}
       </div>
     </Link>

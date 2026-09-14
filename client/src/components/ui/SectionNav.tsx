@@ -12,7 +12,7 @@ export function SectionNav({
         <a
           key={item.id}
           href={`#${item.id}`}
-          className="rounded-full border border-navy-200 px-3 py-1.5 text-sm font-medium text-navy-700 transition-colors hover:border-navy-300 hover:bg-navy-50"
+          className="rounded-full border border-ink-200 px-3 py-1.5 text-sm font-medium text-ink-700 transition-colors hover:border-ink-300 hover:bg-ink-50"
         >
           {item.label}
         </a>

@@ -3,13 +3,18 @@ import { cn } from '@/lib/cn';
 
 export type StatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger' | 'live';
 
+/**
+ * With only red, white and black to work with, tone is carried by weight as
+ * much as hue: a solid black pill reads as positive, a red tint as a caution,
+ * and solid red is reserved for live.
+ */
 const TONES: Record<StatusTone, string> = {
-  neutral: 'bg-navy-100 text-navy-700',
-  info: 'bg-signal-100 text-signal-800',
-  success: 'bg-emerald-100 text-emerald-800',
-  warning: 'bg-amber-100 text-amber-900',
-  danger: 'bg-onair-100 text-onair-800',
-  live: 'bg-onair-500 text-white',
+  neutral: 'bg-ink-100 text-ink-800',
+  info: 'bg-white text-ink-900 ring-1 ring-inset ring-ink-300',
+  success: 'bg-ink-900 text-white',
+  warning: 'bg-brand-50 text-brand-800 ring-1 ring-inset ring-brand-200',
+  danger: 'bg-brand-100 text-brand-800',
+  live: 'bg-brand-600 text-white',
 };
 
 export interface StatusBadgeProps {
@@ -29,7 +34,8 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1',
+        // A badge never wraps; the text beside it gives way instead.
+        'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1',
         'text-xs font-semibold uppercase tracking-wide',
         TONES[tone],
         className,

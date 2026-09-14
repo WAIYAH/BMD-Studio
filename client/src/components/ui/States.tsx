@@ -22,8 +22,8 @@ export function LoadingState({
       aria-live="polite"
       className={cn('flex flex-col items-center justify-center gap-3 px-6 py-12', className)}
     >
-      <Loader2 aria-hidden className="size-6 animate-spin text-signal-600" />
-      <p className="text-sm text-navy-500">{label}</p>
+      <Loader2 aria-hidden className="size-6 animate-spin text-brand-600" />
+      <p className="text-sm text-ink-500">{label}</p>
     </div>
   );
 }
@@ -41,14 +41,14 @@ export function EmptyState({ title, description, icon, action, className }: Empt
     <div
       className={cn(
         'flex flex-col items-center justify-center gap-3 rounded-card',
-        'border border-dashed border-navy-200 px-6 py-12 text-center',
+        'border border-dashed border-ink-200 px-6 py-12 text-center',
         className,
       )}
     >
-      <span className="text-navy-300">{icon ?? <Inbox aria-hidden className="size-8" />}</span>
+      <span className="text-ink-300">{icon ?? <Inbox aria-hidden className="size-8" />}</span>
       <div>
-        <p className="font-semibold text-navy-800">{title}</p>
-        {description && <p className="mt-1 max-w-sm text-sm text-navy-500">{description}</p>}
+        <p className="font-semibold text-ink-800">{title}</p>
+        {description && <p className="mt-1 max-w-sm text-sm text-ink-500">{description}</p>}
       </div>
       {action}
     </div>
@@ -75,17 +75,17 @@ export function ErrorState({
       role="alert"
       className={cn(
         'flex flex-col items-center justify-center gap-3 rounded-card',
-        'border border-onair-200 bg-onair-50 px-6 py-10 text-center',
+        'border border-brand-200 bg-brand-50 px-6 py-10 text-center',
         className,
       )}
     >
-      <AlertTriangle aria-hidden className="size-7 text-onair-500" />
+      <AlertTriangle aria-hidden className="size-7 text-brand-500" />
       <div>
-        <p className="font-semibold text-onair-800">{title}</p>
-        <p className="mt-1 max-w-md text-sm text-onair-700">{message}</p>
+        <p className="font-semibold text-brand-800">{title}</p>
+        <p className="mt-1 max-w-md text-sm text-brand-700">{message}</p>
         {requestId && (
           // Surfacing the correlation id lets support tie a report to a log line.
-          <p className="mt-2 font-mono text-xs text-onair-600/80">Reference: {requestId}</p>
+          <p className="mt-2 font-mono text-xs text-brand-600/80">Reference: {requestId}</p>
         )}
       </div>
       {onRetry && (

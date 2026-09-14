@@ -22,12 +22,12 @@ export function OnAirIndicator() {
     <Link
       to="/live"
       aria-label={`On air now: ${current.showName}`}
-      className="flex items-center gap-2 rounded-lg px-2 py-1 transition-colors hover:bg-navy-50"
+      className="flex items-center gap-2 rounded-lg px-2 py-1 transition-colors hover:bg-ink-50"
     >
       <StatusBadge tone="live" pulse>
         On air
       </StatusBadge>
-      <span className="hidden max-w-40 truncate text-sm font-medium text-navy-900 lg:inline">
+      <span className="hidden max-w-40 truncate text-sm font-medium text-ink-900 lg:inline">
         {current.showName}
       </span>
     </Link>

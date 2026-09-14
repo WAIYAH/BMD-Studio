@@ -6,11 +6,11 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'onair';
 type Size = 'sm' | 'md' | 'lg';
 
 const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-signal-600 text-white hover:bg-signal-700 active:bg-signal-800',
-  secondary: 'bg-white text-navy-900 border border-navy-200 hover:bg-navy-50 active:bg-navy-100',
-  ghost: 'bg-transparent text-navy-700 hover:bg-navy-50 active:bg-navy-100',
-  danger: 'bg-onair-600 text-white hover:bg-onair-700 active:bg-onair-800',
-  onair: 'bg-onair-500 text-white hover:bg-onair-600 active:bg-onair-700',
+  primary: 'bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800',
+  secondary: 'bg-white text-ink-900 border border-ink-200 hover:bg-ink-50 active:bg-ink-100',
+  ghost: 'bg-transparent text-ink-700 hover:bg-ink-50 active:bg-ink-100',
+  danger: 'bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800',
+  onair: 'bg-brand-500 text-white hover:bg-brand-600 active:bg-brand-700',
 };
 
 const SIZES: Record<Size, string> = {

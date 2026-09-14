@@ -30,7 +30,7 @@ export function ShowsPage() {
         <section aria-labelledby="schedule-title">
           <h2
             id="schedule-title"
-            className="font-display text-3xl font-bold uppercase text-navy-900"
+            className="font-display text-3xl font-bold uppercase text-ink-900"
           >
             This week
           </h2>
@@ -63,7 +63,7 @@ export function ShowsPage() {
         </section>
 
         <section aria-labelledby="lineup-title" className="mt-16">
-          <h2 id="lineup-title" className="font-display text-3xl font-bold uppercase text-navy-900">
+          <h2 id="lineup-title" className="font-display text-3xl font-bold uppercase text-ink-900">
             The line-up
           </h2>
 
@@ -133,11 +133,11 @@ function ScheduleDays({ schedule }: { schedule: PublicSchedule }) {
           <section aria-labelledby={`day-${day.key}`}>
             <h3
               id={`day-${day.key}`}
-              className="text-sm font-semibold uppercase tracking-wide text-navy-500"
+              className="text-sm font-semibold uppercase tracking-wide text-ink-500"
             >
               {day.label}
             </h3>
-            <ul className="mt-3 divide-y divide-navy-100 rounded-card border border-navy-100">
+            <ul className="mt-3 divide-y divide-ink-100 rounded-card border border-ink-100">
               {day.airings.map((airing) => (
                 <li key={airing.id}>
                   <AiringRow airing={airing} timeZone={schedule.timezone} />
@@ -154,14 +154,14 @@ function ScheduleDays({ schedule }: { schedule: PublicSchedule }) {
 function AiringRow({ airing, timeZone }: { airing: PublicAiring; timeZone: string }) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3">
-      <time dateTime={airing.startsAt} className="w-32 shrink-0 font-mono text-sm text-navy-600">
+      <time dateTime={airing.startsAt} className="w-32 shrink-0 font-mono text-sm text-ink-600">
         {formatClockRange(airing.startsAt, airing.endsAt, timeZone)}
       </time>
       <div className="min-w-0 flex-1">
-        <p className="font-semibold text-navy-900">{airing.showName}</p>
-        {airing.title && <p className="text-sm text-navy-600">{airing.title}</p>}
+        <p className="font-semibold text-ink-900">{airing.showName}</p>
+        {airing.title && <p className="text-sm text-ink-600">{airing.title}</p>}
       </div>
-      {airing.category && <span className="text-sm text-navy-500">{airing.category}</span>}
+      {airing.category && <span className="text-sm text-ink-500">{airing.category}</span>}
       {airing.status === 'LIVE' && (
         <StatusBadge tone="live" pulse>
           On air
@@ -178,24 +178,24 @@ function ShowCard({ show }: { show: PublicShow }) {
   return (
     <article
       aria-labelledby={titleId}
-      className="flex w-full flex-col rounded-card border border-navy-100 p-5"
+      className="flex w-full flex-col rounded-card border border-ink-100 p-5"
     >
       {show.category && (
-        <p className="text-xs font-semibold uppercase tracking-wide text-signal-600">
+        <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
           {show.category}
         </p>
       )}
-      <h3 id={titleId} className="mt-1 text-2xl font-bold uppercase text-navy-900">
+      <h3 id={titleId} className="mt-1 text-2xl font-bold uppercase text-ink-900">
         {show.name}
       </h3>
-      {show.description && <p className="mt-1 text-sm text-navy-600">{show.description}</p>}
+      {show.description && <p className="mt-1 text-sm text-ink-600">{show.description}</p>}
 
       <div className="mt-4 flex gap-2.5 text-sm">
-        <CalendarDays aria-hidden className="mt-0.5 size-4 shrink-0 text-navy-400" />
+        <CalendarDays aria-hidden className="mt-0.5 size-4 shrink-0 text-ink-400" />
         {show.slots.length === 0 ? (
-          <p className="text-navy-500">No regular slot at the moment</p>
+          <p className="text-ink-500">No regular slot at the moment</p>
         ) : (
-          <ul className="space-y-1 text-navy-700">
+          <ul className="space-y-1 text-ink-700">
             {show.slots.map((slot) => (
               <li key={`${slot.weekdays.join('-')}@${slot.startMinute}`}>
                 {`${formatWeekdays(slot.weekdays)} · ${formatMinuteOfDay(slot.startMinute)} – ${formatMinuteOfDay(slot.endMinute)}`}

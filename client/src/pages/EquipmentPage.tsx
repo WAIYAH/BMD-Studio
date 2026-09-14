@@ -23,7 +23,7 @@ export function EquipmentPage() {
         description="Microphones, cameras, lighting and audio gear from the studio's own store. Availability shows what is on the shelf right now."
       >
         {/* Rental requests need the rental lifecycle (Phase 6); say so plainly. */}
-        <p className="mt-6 inline-flex rounded-full bg-white/10 px-3 py-1 text-sm text-navy-100">
+        <p className="mt-6 inline-flex rounded-full bg-white/10 px-3 py-1 text-sm text-ink-100">
           Online rental requests are not open yet.
         </p>
       </PageHeader>
@@ -67,12 +67,12 @@ export function EquipmentPage() {
                 >
                   <h2
                     id={`category-${category.slug}-title`}
-                    className="font-display text-3xl font-bold uppercase text-navy-900"
+                    className="font-display text-3xl font-bold uppercase text-ink-900"
                   >
                     {category.name}
                   </h2>
                   {category.description && (
-                    <p className="mt-1 max-w-2xl text-navy-600">{category.description}</p>
+                    <p className="mt-1 max-w-2xl text-ink-600">{category.description}</p>
                   )}
 
                   <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -99,12 +99,12 @@ function EquipmentCard({ item }: { item: PublicEquipmentItem }) {
   return (
     <article
       aria-labelledby={titleId}
-      className="flex w-full flex-col rounded-card border border-navy-100 p-5 transition-shadow hover:shadow-sm"
+      className="flex w-full flex-col rounded-card border border-ink-100 p-5 transition-shadow hover:shadow-sm"
     >
-      <h3 id={titleId} className="text-xl font-bold uppercase text-navy-900">
+      <h3 id={titleId} className="text-xl font-bold uppercase text-ink-900">
         {item.name}
       </h3>
-      {makeAndModel && <p className="text-sm text-navy-500">{makeAndModel}</p>}
+      {makeAndModel && <p className="text-sm text-ink-500">{makeAndModel}</p>}
 
       <div className="mt-3">
         {item.availableCount > 0 ? (
@@ -116,16 +116,16 @@ function EquipmentCard({ item }: { item: PublicEquipmentItem }) {
         )}
       </div>
 
-      {item.description && <p className="mt-3 text-sm text-navy-600">{item.description}</p>}
+      {item.description && <p className="mt-3 text-sm text-ink-600">{item.description}</p>}
 
-      <dl className="mt-auto grid grid-cols-2 gap-3 border-t border-navy-100 pt-4 text-sm">
+      <dl className="mt-auto grid grid-cols-2 gap-3 border-t border-ink-100 pt-4 text-sm">
         <div>
-          <dt className="text-navy-500">Per day</dt>
-          <dd className="text-lg font-semibold text-navy-900">{shillings(item.dailyRateCents)}</dd>
+          <dt className="text-ink-500">Per day</dt>
+          <dd className="text-lg font-semibold text-ink-900">{shillings(item.dailyRateCents)}</dd>
         </div>
         <div>
-          <dt className="text-navy-500">Deposit</dt>
-          <dd className="text-lg font-semibold text-navy-900">
+          <dt className="text-ink-500">Deposit</dt>
+          <dd className="text-lg font-semibold text-ink-900">
             {item.depositCents > 0 ? shillings(item.depositCents) : 'No deposit'}
           </dd>
         </div>

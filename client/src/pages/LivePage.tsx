@@ -65,16 +65,16 @@ function LiveContent({ onAir, streams }: { onAir: PublicOnAir; streams: PublicLi
       {current && (
         <section
           aria-label="On air now"
-          className="flex flex-wrap items-center gap-4 rounded-card border border-onair-200 bg-onair-50 p-5"
+          className="flex flex-wrap items-center gap-4 rounded-card border border-brand-200 bg-brand-50 p-5"
         >
           <StatusBadge tone="live" pulse>
             On air
           </StatusBadge>
           <div className="min-w-0 flex-1">
-            <p className="text-lg font-semibold text-navy-900">{current.showName}</p>
-            {current.title && <p className="text-sm text-navy-600">{current.title}</p>}
+            <p className="text-lg font-semibold text-ink-900">{current.showName}</p>
+            {current.title && <p className="text-sm text-ink-600">{current.title}</p>}
           </div>
-          <p className="font-mono text-sm text-navy-600">
+          <p className="font-mono text-sm text-ink-600">
             {formatClockRange(current.startsAt, current.endsAt, timezone)}
           </p>
         </section>
@@ -98,10 +98,7 @@ function LiveContent({ onAir, streams }: { onAir: PublicOnAir; streams: PublicLi
               : 'Nothing is scheduled to air yet.'
           }
           action={
-            <Link
-              to="/shows"
-              className="text-sm font-semibold text-signal-600 hover:text-signal-700"
-            >
+            <Link to="/shows" className="text-sm font-semibold text-brand-600 hover:text-brand-700">
               See the full schedule
             </Link>
           }
@@ -123,16 +120,16 @@ function StreamCard({ stream }: { stream: PublicLiveStream }) {
           Live
         </StatusBadge>
         {stream.showName && (
-          <span className="text-sm font-medium text-navy-500">{stream.showName}</span>
+          <span className="text-sm font-medium text-ink-500">{stream.showName}</span>
         )}
       </div>
-      <h2 id={titleId} className="mt-2 font-display text-3xl font-bold uppercase text-navy-900">
+      <h2 id={titleId} className="mt-2 font-display text-3xl font-bold uppercase text-ink-900">
         {stream.title}
       </h2>
-      {stream.description && <p className="mt-1 max-w-2xl text-navy-600">{stream.description}</p>}
+      {stream.description && <p className="mt-1 max-w-2xl text-ink-600">{stream.description}</p>}
 
       {player?.embedUrl && (
-        <div className="mt-5 aspect-video w-full max-w-4xl overflow-hidden rounded-card bg-navy-950">
+        <div className="mt-5 aspect-video w-full max-w-4xl overflow-hidden rounded-card bg-ink-950">
           <iframe
             src={player.embedUrl}
             title={`${stream.title} on ${STREAM_PLATFORM_LABEL[player.platform]}`}
@@ -153,7 +150,7 @@ function StreamCard({ stream }: { stream: PublicLiveStream }) {
                 href={platform.watchUrl ?? undefined}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-navy-200 px-3 py-2 text-sm font-semibold text-navy-800 transition-colors hover:bg-navy-50"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-ink-200 px-3 py-2 text-sm font-semibold text-ink-800 transition-colors hover:bg-ink-50"
               >
                 Watch on {STREAM_PLATFORM_LABEL[platform.platform]}
                 <ExternalLink aria-hidden className="size-4" />

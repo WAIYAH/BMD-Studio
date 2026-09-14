@@ -3,45 +3,43 @@
 /**
  * B.M.D Studio design tokens.
  *
- * The brand is broadcast-grade: deep navy as the operational ground, a signal
- * blue for interactive elements, and a single saturated red reserved for ON AIR
- * and destructive actions. Red is never used decoratively — in a broadcast
- * facility, red means live.
+ * The public identity uses three colours only: red, white and black. `brand` is
+ * the red; `ink` is black and its tints, for text, borders and surfaces.
+ * Tailwind's default palette is switched off, so no other hue can creep into a
+ * component — an unknown colour class simply produces no style.
+ *
+ * Red carries the brand and every primary action, so ON AIR is marked by its
+ * pulse and its label, never by colour alone.
  */
 @theme {
-  --color-navy-50: #f1f5fb;
-  --color-navy-100: #dde7f5;
-  --color-navy-200: #bccfe9;
-  --color-navy-300: #8dadd8;
-  --color-navy-400: #5682c1;
-  --color-navy-500: #3562a6;
-  --color-navy-600: #274c89;
-  --color-navy-700: #1f3c6f;
-  --color-navy-800: #12294f;
-  --color-navy-900: #0a2540;
-  --color-navy-950: #05162a;
+  --color-*: initial;
 
-  --color-signal-50: #eff6ff;
-  --color-signal-100: #dbeafe;
-  --color-signal-200: #bfdbfe;
-  --color-signal-300: #93c5fd;
-  --color-signal-400: #60a5fa;
-  --color-signal-500: #2f6fed;
-  --color-signal-600: #1d54d1;
-  --color-signal-700: #1841a8;
-  --color-signal-800: #173785;
-  --color-signal-900: #17306a;
+  --color-white: #ffffff;
+  --color-black: #000000;
 
-  --color-onair-50: #fff1f2;
-  --color-onair-100: #ffe0e2;
-  --color-onair-200: #ffc6ca;
-  --color-onair-300: #ff9ba3;
-  --color-onair-400: #fb6470;
-  --color-onair-500: #e11d2e;
-  --color-onair-600: #c81325;
-  --color-onair-700: #a71020;
-  --color-onair-800: #8a121f;
-  --color-onair-900: #74131f;
+  --color-ink-50: #f6f6f6;
+  --color-ink-100: #ececec;
+  --color-ink-200: #d9d9d9;
+  --color-ink-300: #bdbdbd;
+  --color-ink-400: #8f8f8f;
+  --color-ink-500: #6b6b6b;
+  --color-ink-600: #545454;
+  --color-ink-700: #3f3f3f;
+  --color-ink-800: #2a2a2a;
+  --color-ink-900: #141414;
+  --color-ink-950: #000000;
+
+  --color-brand-50: #fff1f1;
+  --color-brand-100: #ffdede;
+  --color-brand-200: #ffc2c2;
+  --color-brand-300: #ff9494;
+  --color-brand-400: #ff5c5c;
+  --color-brand-500: #f52a2a;
+  --color-brand-600: #e40000;
+  --color-brand-700: #bf0000;
+  --color-brand-800: #9c0404;
+  --color-brand-900: #800b0b;
+  --color-brand-950: #470000;
 
   --font-sans:
     'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
@@ -58,12 +56,15 @@
   }
 
   body {
-    @apply bg-white font-sans text-navy-900 antialiased;
+    @apply bg-white font-sans text-ink-900 antialiased;
   }
 
-  /* Keyboard focus must stay clearly visible across the whole application. */
+  /*
+   * Keyboard focus must stay clearly visible across the whole application.
+   * Sections painted red override this with a white outline.
+   */
   :focus-visible {
-    @apply outline-2 outline-offset-2 outline-signal-500;
+    @apply outline-2 outline-offset-2 outline-brand-600;
   }
 
   h1,

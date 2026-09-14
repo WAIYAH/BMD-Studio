@@ -15,7 +15,7 @@ export function MediaThumbnail({ asset, alt }: { asset: PublicMediaAsset | null;
 
   const Icon = asset?.mimeType.startsWith('video/') ? Film : ImageOff;
   return (
-    <div className="grid size-full place-items-center text-navy-300">
+    <div className="grid size-full place-items-center text-ink-300">
       <Icon aria-hidden className="size-10" />
     </div>
   );

@@ -74,7 +74,7 @@ function BackLink() {
   return (
     <Link
       to="/gallery"
-      className="inline-flex items-center gap-1 text-sm font-semibold text-signal-600 hover:text-signal-700"
+      className="inline-flex items-center gap-1 text-sm font-semibold text-brand-600 hover:text-brand-700"
     >
       <ArrowLeft aria-hidden className="size-4" />
       All galleries
@@ -87,7 +87,7 @@ function GalleryItemTile({ item }: { item: PublicGalleryItem }) {
   const alt = media.altText ?? item.caption ?? '';
 
   return (
-    <figure className="overflow-hidden rounded-card border border-navy-100 bg-white">
+    <figure className="overflow-hidden rounded-card border border-ink-100 bg-white">
       {media.mimeType.startsWith('video/') ? (
         <video
           controls
@@ -95,21 +95,21 @@ function GalleryItemTile({ item }: { item: PublicGalleryItem }) {
           src={media.url}
           poster={media.thumbnailUrl ?? undefined}
           aria-label={alt || undefined}
-          className="aspect-video w-full bg-navy-950"
+          className="aspect-video w-full bg-ink-950"
         />
       ) : (
         <a
           href={media.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block aspect-[4/3] bg-navy-50"
+          className="block aspect-[4/3] bg-ink-50"
         >
           <MediaThumbnail asset={media} alt={alt} />
           <span className="sr-only">Open full size</span>
         </a>
       )}
       {item.caption && (
-        <figcaption className="px-4 py-3 text-sm text-navy-700">{item.caption}</figcaption>
+        <figcaption className="px-4 py-3 text-sm text-ink-700">{item.caption}</figcaption>
       )}
     </figure>
   );

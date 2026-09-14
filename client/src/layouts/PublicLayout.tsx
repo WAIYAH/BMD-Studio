@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Radio } from 'lucide-react';
 import { OnAirIndicator } from '@/features/broadcast/OnAirIndicator';
 import { cn } from '@/lib/cn';
@@ -10,30 +11,43 @@ const NAV = [
   { to: '/shows', label: 'Shows' },
   { to: '/live', label: 'Live' },
   { to: '/gallery', label: 'Gallery' },
+  { to: '/visit', label: 'Visit us' },
 ];
 
+/** A new page opens at the top; in-page `#section` links keep their own scrolling. */
+function useScrollToTopOnNavigate(): void {
+  const { pathname, hash } = useLocation();
+
+  useEffect(() => {
+    if (!hash) window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [pathname, hash]);
+}
+
 export function PublicLayout() {
+  useScrollToTopOnNavigate();
+
   return (
     <div className="flex min-h-dvh flex-col bg-white">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-navy-900 focus:px-4 focus:py-2 focus:text-white"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-ink-950 focus:px-4 focus:py-2 focus:text-white"
       >
         Skip to content
       </a>
 
-      <header className="sticky top-0 z-40 border-b border-navy-100 bg-white/95 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-ink-100 bg-white/95 backdrop-blur">
+        <div aria-hidden className="h-1 bg-brand-600" />
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-          <NavLink to="/" className="flex items-center gap-2.5" aria-label="B.M.D Studio home">
-            <span className="grid size-9 place-items-center rounded-lg bg-navy-900 text-white">
+          <Link to="/" className="flex items-center gap-2.5" aria-label="B.M.D Studio home">
+            <span className="grid size-9 place-items-center rounded-full bg-brand-600 text-white">
               <Radio aria-hidden className="size-5" />
             </span>
-            <span className="font-display text-xl font-bold uppercase tracking-wide text-navy-900">
-              B.M.D <span className="text-onair-500">Studio</span>
+            <span className="font-display text-xl font-bold uppercase tracking-wide text-ink-950">
+              B.M.D <span className="text-brand-600">Studio</span>
             </span>
-          </NavLink>
+          </Link>
 
-          <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
+          <nav aria-label="Primary" className="hidden items-center gap-1 lg:flex">
             {NAV.map((item) => (
               <NavLink
                 key={item.to}
@@ -41,10 +55,10 @@ export function PublicLayout() {
                 end={item.end}
                 className={({ isActive }) =>
                   cn(
-                    'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                    'rounded-full px-3 py-2 text-sm font-semibold transition-colors',
                     isActive
-                      ? 'bg-navy-50 text-navy-900'
-                      : 'text-navy-600 hover:bg-navy-50 hover:text-navy-900',
+                      ? 'bg-brand-50 text-brand-700'
+                      : 'text-ink-700 hover:bg-ink-100 hover:text-ink-950',
                   )
                 }
               >
@@ -56,18 +70,18 @@ export function PublicLayout() {
           <div className="flex items-center gap-2">
             <OnAirIndicator />
             {/* Authentication lands in Phase 3; no fake session UI before then. */}
-            <NavLink
+            <Link
               to="/book"
-              className="rounded-lg bg-signal-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-signal-700"
+              className="rounded-full bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700"
             >
               Book a session
-            </NavLink>
+            </Link>
           </div>
         </div>
 
         <nav
           aria-label="Primary mobile"
-          className="flex gap-1 overflow-x-auto border-t border-navy-100 px-4 py-2 md:hidden"
+          className="flex gap-1 overflow-x-auto border-t border-ink-100 px-4 py-2 lg:hidden"
         >
           {NAV.map((item) => (
             <NavLink
@@ -76,8 +90,8 @@ export function PublicLayout() {
               end={item.end}
               className={({ isActive }) =>
                 cn(
-                  'whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium',
-                  isActive ? 'bg-navy-50 text-navy-900' : 'text-navy-600',
+                  'whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold',
+                  isActive ? 'bg-brand-50 text-brand-700' : 'text-ink-700',
                 )
               }
             >
@@ -91,16 +105,59 @@ export function PublicLayout() {
         <Outlet />
       </main>
 
-      <footer className="border-t border-navy-100 bg-navy-950 text-navy-200">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-8 text-sm sm:px-6 lg:px-8">
-          <p className="font-display text-lg font-bold uppercase tracking-wide text-white">
-            B.M.D Studio
-          </p>
-          <p className="max-w-xl text-navy-300">
-            Radio broadcasting, podcast production, photography, video production and livestream
-            production. Nairobi, Kenya.
-          </p>
-          <p className="mt-4 text-xs text-navy-400">
+      <footer className="border-t-4 border-brand-600 bg-ink-950 text-ink-300">
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.5fr_1fr_1fr] lg:px-8">
+          <div>
+            <p className="font-display text-2xl font-bold uppercase tracking-wide text-white">
+              B.M.D <span className="text-brand-500">Studio</span>
+            </p>
+            <p className="mt-3 max-w-sm text-sm">
+              Radio broadcasting, podcast production, photography, video and livestream production
+              in Nairobi, Kenya.
+            </p>
+          </div>
+
+          <nav aria-label="Footer">
+            <p className="font-display text-sm font-semibold uppercase tracking-[0.2em] text-white">
+              Explore
+            </p>
+            <ul className="mt-3 grid grid-cols-2 gap-2 text-sm">
+              {NAV.filter((item) => item.to !== '/').map((item) => (
+                <li key={item.to}>
+                  <Link to={item.to} className="transition-colors hover:text-white">
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div>
+            <p className="font-display text-sm font-semibold uppercase tracking-[0.2em] text-white">
+              Get started
+            </p>
+            <ul className="mt-3 space-y-2 text-sm">
+              <li>
+                <Link to="/book" className="transition-colors hover:text-white">
+                  Book a session
+                </Link>
+              </li>
+              <li>
+                <Link to="/visit" className="transition-colors hover:text-white">
+                  Opening hours &amp; location
+                </Link>
+              </li>
+              <li>
+                <Link to="/live" className="transition-colors hover:text-white">
+                  Watch live
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="border-t border-ink-800">
+          <p className="mx-auto max-w-7xl px-4 py-5 text-xs text-ink-400 sm:px-6 lg:px-8">
             &copy; {new Date().getFullYear()} B.M.D Studio. All rights reserved.
           </p>
         </div>
