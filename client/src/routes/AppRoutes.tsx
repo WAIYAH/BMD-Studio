@@ -3,11 +3,14 @@ import { GuestOnly, RequireAuth } from '@/features/auth/guards';
 import { AccountLayout } from '@/layouts/AccountLayout';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { PublicLayout } from '@/layouts/PublicLayout';
+import { AccountBookingDetailPage } from '@/pages/account/AccountBookingDetailPage';
+import { AccountBookingReschedulePage } from '@/pages/account/AccountBookingReschedulePage';
 import { AccountBookingsPage } from '@/pages/account/AccountBookingsPage';
 import { AccountDeliverablesPage } from '@/pages/account/AccountDeliverablesPage';
 import { AccountNotificationsPage } from '@/pages/account/AccountNotificationsPage';
 import { AccountOverviewPage } from '@/pages/account/AccountOverviewPage';
 import { AccountPaymentsPage } from '@/pages/account/AccountPaymentsPage';
+import { AccountRentalDetailPage } from '@/pages/account/AccountRentalDetailPage';
 import { AccountRentalsPage } from '@/pages/account/AccountRentalsPage';
 import { AccountSettingsPage } from '@/pages/account/AccountSettingsPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
@@ -16,6 +19,7 @@ import { BookPage } from '@/pages/BookPage';
 import { BookingTermsPage } from '@/pages/BookingTermsPage';
 import { CookiePolicyPage } from '@/pages/CookiePolicyPage';
 import { EquipmentPage } from '@/pages/EquipmentPage';
+import { HirePage } from '@/pages/HirePage';
 import { GalleryDetailPage } from '@/pages/GalleryDetailPage';
 import { GalleryPage } from '@/pages/GalleryPage';
 import { HomePage } from '@/pages/HomePage';
@@ -51,7 +55,10 @@ export function AppRoutes() {
       >
         <Route index element={<AccountOverviewPage />} />
         <Route path="bookings" element={<AccountBookingsPage />} />
+        <Route path="bookings/:id" element={<AccountBookingDetailPage />} />
+        <Route path="bookings/:id/reschedule" element={<AccountBookingReschedulePage />} />
         <Route path="rentals" element={<AccountRentalsPage />} />
+        <Route path="rentals/:id" element={<AccountRentalDetailPage />} />
         <Route path="payments" element={<AccountPaymentsPage />} />
         <Route path="deliverables" element={<AccountDeliverablesPage />} />
         <Route path="notifications" element={<AccountNotificationsPage />} />
@@ -64,6 +71,7 @@ export function AppRoutes() {
         <Route path="services" element={<ServicesPage />} />
         <Route path="book" element={<BookPage />} />
         <Route path="equipment" element={<EquipmentPage />} />
+        <Route path="hire" element={<HirePage />} />
         <Route path="shows" element={<ShowsPage />} />
         <Route path="live" element={<LivePage />} />
         <Route path="gallery" element={<GalleryPage />} />

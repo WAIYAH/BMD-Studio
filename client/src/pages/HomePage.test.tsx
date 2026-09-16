@@ -35,6 +35,7 @@ const service = (slug: string, name: string, priceCents: number) => ({
   fromPriceCents: priceCents,
   minDurationMinutes: 60,
   maxDurationMinutes: 240,
+  slotIntervalMinutes: 30,
   requiresApproval: false,
   rooms: [{ slug: `${slug}-room`, name: 'Room', capacity: 4, priceCents }],
   packages: [],

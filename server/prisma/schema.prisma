@@ -555,6 +555,18 @@ model Booking {
   /// Set on the superseded row when a booking is moved to a new slot.
   rescheduledToId    String?   @unique @map("rescheduled_to_id")
   completedAt        DateTime? @map("completed_at") @db.Timestamptz(3)
+
+  /// The chosen package, when the service is priced per package.
+  packageId     String?   @map("package_id")
+  /// End of the room's turnaround after this booking. `bookings_no_overlap`
+  /// covers `[starts_at, COALESCE(blocked_until, ends_at))`, so the buffer
+  /// between sessions is enforced by PostgreSQL, not by application code.
+  blockedUntil  DateTime? @map("blocked_until") @db.Timestamptz(3)
+  /// What must be paid to confirm. Fixed when the booking is made, so a later
+  /// change to `booking.deposit_percent` cannot rewrite an existing quote.
+  depositCents  Int       @default(0) @map("deposit_cents")
+  /// When an unpaid booking stops holding its room; swept by a job.
+  holdExpiresAt DateTime? @map("hold_expires_at") @db.Timestamptz(3)
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -563,6 +575,8 @@ model Booking {
   room       StudioRoom @relation(fields: [roomId], references: [id], onDelete: Restrict)
   service    Service    @relation(fields: [serviceId], references: [id], onDelete: Restrict)
   approvedBy User?      @relation("BookingApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  package PhotographyPackage? @relation(fields: [packageId], references: [id], onDelete: SetNull)
 
   rescheduledTo   Booking? @relation("BookingReschedule", fields: [rescheduledToId], references: [id], onDelete: SetNull)
   rescheduledFrom Booking? @relation("BookingReschedule")
@@ -577,6 +591,7 @@ model Booking {
   @@index([customerId, startsAt(sort: Desc)])
   @@index([status, startsAt])
   @@index([studioId, startsAt])
+  @@index([packageId])
   @@map("bookings")
 }
 
@@ -680,6 +695,8 @@ model EquipmentRental {
   status     RentalStatus @default(PENDING_APPROVAL)
 
   subtotalCents  Int @map("subtotal_cents")
+  /// VAT on the hire charge. Deposits are refundable and are never taxed.
+  taxCents       Int @default(0) @map("tax_cents")
   depositCents   Int @default(0) @map("deposit_cents")
   lateFeeCents   Int @default(0) @map("late_fee_cents")
   damageFeeCents Int @default(0) @map("damage_fee_cents")
@@ -1023,7 +1040,8 @@ model PhotographyPackage {
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  service  Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  bookings Booking[]
 
   @@index([serviceId, isActive])
   @@map("photography_packages")

@@ -178,7 +178,7 @@ function ServiceCard({ service }: { service: PublicService }) {
 
       <div className="mt-auto pt-5">
         <Link
-          to="/book"
+          to={`/book?service=${encodeURIComponent(service.slug)}`}
           className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-brand-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-700"
         >
           Book this service

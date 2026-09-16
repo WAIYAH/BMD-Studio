@@ -12,3 +12,5 @@ export * from './policies.js';
 export * from './auth.js';
 export * from './account.js';
 export * from './dashboard.js';
+export * from './booking.js';
+export * from './rental.js';

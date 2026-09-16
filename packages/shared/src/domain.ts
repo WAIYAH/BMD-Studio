@@ -32,6 +32,8 @@ export type RentalStatusValue =
 
 export type EquipmentStatusValue = 'AVAILABLE' | 'RESERVED' | 'RENTED' | 'MAINTENANCE' | 'RETIRED';
 
+export type BookingItemKindValue = 'SERVICE' | 'EQUIPMENT' | 'ADDON';
+
 export type OccurrenceStatusValue = 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED';
 
 export type StreamStatusValue = 'IDLE' | 'SCHEDULED' | 'LIVE' | 'ENDED' | 'ERROR';

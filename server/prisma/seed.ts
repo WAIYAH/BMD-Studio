@@ -60,6 +60,7 @@ const PERMISSION_DESCRIPTIONS: Record<string, string> = {
   'rental:read:own': 'View own equipment rentals',
   'rental:read:any': 'View any equipment rental',
   'rental:create': 'Request an equipment rental',
+  'rental:cancel:own': 'Cancel own equipment hire request',
   'rental:approve': 'Approve or reject a rental request',
   'rental:checkout': 'Check equipment out to a customer',
   'rental:return': 'Accept an equipment return',
@@ -676,6 +677,11 @@ async function seedSettings(): Promise<void> {
       key: 'booking.deposit_percent',
       value: 50,
       description: 'Percentage of the total required to confirm a booking.',
+    },
+    {
+      key: 'booking.payment_hold_minutes',
+      value: 30,
+      description: 'How long an unpaid booking holds its room before it is released.',
     },
     {
       key: 'rental.late_fee_percent_per_day',

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { formatKes, type PublicEquipmentItem } from '@bmd/shared';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/States';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -22,10 +23,12 @@ export function EquipmentPage() {
         title="Equipment hire"
         description="Microphones, cameras, lighting and audio gear from the studio's own store. Availability shows what is on the shelf right now."
       >
-        {/* Rental requests need the rental lifecycle (Phase 6); say so plainly. */}
-        <p className="mt-6 inline-flex rounded-full bg-white/10 px-3 py-1 text-sm text-ink-100">
-          Online rental requests are not open yet.
-        </p>
+        <Link
+          to="/hire"
+          className="mt-6 inline-flex h-11 items-center justify-center rounded-full bg-brand-600 px-6 text-sm font-semibold text-white transition-colors hover:bg-brand-700"
+        >
+          Request a hire
+        </Link>
       </PageHeader>
 
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -118,7 +121,14 @@ function EquipmentCard({ item }: { item: PublicEquipmentItem }) {
 
       {item.description && <p className="mt-3 text-sm text-ink-600">{item.description}</p>}
 
-      <dl className="mt-auto grid grid-cols-2 gap-3 border-t border-ink-100 pt-4 text-sm">
+      <Link
+        to={`/hire?items=${encodeURIComponent(`${item.key}:1`)}`}
+        className="mt-4 inline-flex h-9 items-center justify-center rounded-full border border-ink-300 px-4 text-sm font-semibold text-ink-950 transition-colors hover:bg-ink-100"
+      >
+        Add to a hire
+      </Link>
+
+      <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-ink-100 pt-4 text-sm">
         <div>
           <dt className="text-ink-500">Per day</dt>
           <dd className="text-lg font-semibold text-ink-900">{shillings(item.dailyRateCents)}</dd>

@@ -14,19 +14,50 @@ const POLICY_SETTINGS = {
   vatPercent: { key: 'tax.vat_percent', max: 100 },
 } as const satisfies Record<keyof PublicBookingPolicy, { key: string; max: number }>;
 
-export async function getBookingPolicy(): Promise<PublicBookingPolicy> {
+/**
+ * How long an unpaid booking holds its room. Operational rather than legal, so
+ * it is not quoted in the public terms — but the booking engine cannot work
+ * without a number, so an unset or nonsensical value falls back to this one.
+ */
+const PAYMENT_HOLD_SETTING = { key: 'booking.payment_hold_minutes', max: 24 * 60 } as const;
+
+export const DEFAULT_PAYMENT_HOLD_MINUTES = 30;
+
+/** The public figures plus the rules only the booking engine needs. */
+export interface BookingRules extends PublicBookingPolicy {
+  paymentHoldMinutes: number;
+}
+
+async function readSettings(
+  keys: string[],
+): Promise<(setting: { key: string; max: number }) => number | null> {
   const rows = await prisma.setting.findMany({
-    where: { key: { in: Object.values(POLICY_SETTINGS).map((setting) => setting.key) } },
+    where: { key: { in: keys } },
     select: { key: true, value: true },
   });
   const values = new Map(rows.map((row) => [row.key, row.value]));
 
-  const read = ({ key, max }: { key: string; max: number }): number | null => {
+  return ({ key, max }) => {
     const value = values.get(key);
     return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= max
       ? value
       : null;
   };
+}
+
+export async function getBookingRules(): Promise<BookingRules> {
+  const policy = await getBookingPolicy();
+  const read = await readSettings([PAYMENT_HOLD_SETTING.key]);
+  const hold = read(PAYMENT_HOLD_SETTING);
+
+  return {
+    ...policy,
+    paymentHoldMinutes: hold && hold > 0 ? hold : DEFAULT_PAYMENT_HOLD_MINUTES,
+  };
+}
+
+export async function getBookingPolicy(): Promise<PublicBookingPolicy> {
+  const read = await readSettings(Object.values(POLICY_SETTINGS).map((setting) => setting.key));
 
   return {
     cancellationWindowHours: read(POLICY_SETTINGS.cancellationWindowHours),

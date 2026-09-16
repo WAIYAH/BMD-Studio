@@ -34,6 +34,7 @@ export async function getServiceCatalogue(): Promise<PublicServiceCategory[]> {
           basePriceCents: true,
           minDurationMin: true,
           maxDurationMin: true,
+          slotIntervalMin: true,
           requiresApproval: true,
           rooms: {
             where: DELIVERABLE_ROOM,
@@ -86,6 +87,7 @@ export async function getServiceCatalogue(): Promise<PublicServiceCategory[]> {
           ),
           minDurationMinutes: service.minDurationMin,
           maxDurationMinutes: service.maxDurationMin,
+          slotIntervalMinutes: service.slotIntervalMin,
           requiresApproval: service.requiresApproval,
           rooms,
           packages: service.packages,

@@ -94,7 +94,7 @@ const RENTAL_SELECT = {
 
 type RentalRow = Prisma.EquipmentRentalGetPayload<{ select: typeof RENTAL_SELECT }>;
 
-const PAYMENT_SELECT = {
+export const PAYMENT_SELECT = {
   id: true,
   reference: true,
   status: true,
@@ -119,7 +119,7 @@ const NOTIFICATION_SELECT = {
 
 type NotificationRow = Prisma.NotificationGetPayload<{ select: typeof NOTIFICATION_SELECT }>;
 
-const DELIVERABLE_SELECT = {
+export const DELIVERABLE_SELECT = {
   id: true,
   title: true,
   dueAt: true,
@@ -166,7 +166,7 @@ function toRental(row: RentalRow, paid: Map<string, number>, now: Date): Dashboa
   };
 }
 
-function toPayment(row: PaymentRow): DashboardPayment {
+export function toPayment(row: PaymentRow): DashboardPayment {
   return {
     id: row.id,
     reference: row.reference,
@@ -191,7 +191,7 @@ function toNotification(row: NotificationRow): DashboardNotification {
   };
 }
 
-function toDeliverable(row: DeliverableRow): DashboardDeliverable {
+export function toDeliverable(row: DeliverableRow): DashboardDeliverable {
   return {
     id: row.id,
     title: row.title,

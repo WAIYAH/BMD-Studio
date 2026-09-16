@@ -26,6 +26,7 @@ const CATALOGUE: PublicServiceCategory[] = [
         fromPriceCents: 350_000,
         minDurationMinutes: 60,
         maxDurationMinutes: 240,
+        slotIntervalMinutes: 30,
         requiresApproval: true,
         rooms: [
           { slug: 'live-room', name: 'Live Broadcast Room', capacity: 4, priceCents: 350_000 },
@@ -48,6 +49,7 @@ const CATALOGUE: PublicServiceCategory[] = [
         fromPriceCents: 180_000,
         minDurationMinutes: 60,
         maxDurationMinutes: 300,
+        slotIntervalMinutes: 30,
         requiresApproval: false,
         rooms: [
           { slug: 'podcast-a', name: 'Podcast Studio A', capacity: 4, priceCents: 250_000 },
@@ -71,6 +73,7 @@ const CATALOGUE: PublicServiceCategory[] = [
         fromPriceCents: 1_200_000,
         minDurationMinutes: 60,
         maxDurationMinutes: 240,
+        slotIntervalMinutes: 60,
         requiresApproval: false,
         rooms: [
           { slug: 'photo-stage', name: 'Photography Stage', capacity: 10, priceCents: 1_200_000 },

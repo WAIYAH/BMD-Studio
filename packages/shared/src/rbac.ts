@@ -69,6 +69,7 @@ export const PERMISSIONS = {
   RENTAL_READ_OWN: 'rental:read:own',
   RENTAL_READ_ANY: 'rental:read:any',
   RENTAL_CREATE: 'rental:create',
+  RENTAL_CANCEL_OWN: 'rental:cancel:own',
   RENTAL_APPROVE: 'rental:approve',
   RENTAL_CHECKOUT: 'rental:checkout',
   RENTAL_RETURN: 'rental:return',
@@ -120,6 +121,7 @@ const CUSTOMER_PERMISSIONS: Permission[] = [
   P.BOOKING_CANCEL_OWN,
   P.RENTAL_READ_OWN,
   P.RENTAL_CREATE,
+  P.RENTAL_CANCEL_OWN,
   P.PAYMENT_READ_OWN,
 ];
 

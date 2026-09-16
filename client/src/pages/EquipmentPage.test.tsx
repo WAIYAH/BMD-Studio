@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { formatKes, type PublicEquipmentCategory } from '@bmd/shared';
 import * as catalogueApi from '@/features/catalogue/api';
@@ -65,7 +66,9 @@ function renderPage() {
   });
   return render(
     <QueryClientProvider client={client}>
-      <EquipmentPage />
+      <MemoryRouter>
+        <EquipmentPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -103,13 +106,16 @@ describe('EquipmentPage', () => {
     expect(within(condenser).queryByText(/of 2 available/)).not.toBeInTheDocument();
   });
 
-  it('does not pretend rentals can be requested online', async () => {
+  it('sends a visitor to the hire flow, with the chosen item already in it', async () => {
     vi.spyOn(catalogueApi, 'fetchEquipmentCatalogue').mockResolvedValue(CATALOGUE);
     renderPage();
 
-    await screen.findByRole('article', { name: 'Shure SM7B' });
-    expect(screen.getByText('Online rental requests are not open yet.')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /rent|hire|request/i })).not.toBeInTheDocument();
+    const sm7b = await screen.findByRole('article', { name: 'Shure SM7B' });
+    expect(within(sm7b).getByRole('link', { name: 'Add to a hire' })).toHaveAttribute(
+      'href',
+      `/hire?items=${encodeURIComponent('shure-sm7b-150000-1000000:1')}`,
+    );
+    expect(screen.getByRole('link', { name: 'Request a hire' })).toHaveAttribute('href', '/hire');
   });
 
   it('reports a failure with its reference', async () => {

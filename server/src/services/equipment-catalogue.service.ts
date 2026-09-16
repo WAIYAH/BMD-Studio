@@ -101,7 +101,18 @@ function groupUnits(units: UnitRow[]): PublicEquipmentItem[] {
   return [...products.values()];
 }
 
-function productKey(unit: UnitRow): string {
+/**
+ * The identity of a product as a customer sees it. The hire flow groups and
+ * allocates by the same key, so what is offered and what is reserved can never
+ * drift apart.
+ */
+export function productKey(unit: {
+  name: string;
+  manufacturer: string | null;
+  model: string | null;
+  dailyRateCents: number;
+  depositCents: number;
+}): string {
   const label = [unit.name, unit.manufacturer, unit.model]
     .filter(Boolean)
     .join(' ')

@@ -6,10 +6,27 @@ import {
   DEFAULT_PAGE_SIZE,
   MAX_PAGE_SIZE,
   NOTIFICATION_FILTERS,
+  PERMISSIONS,
+  cancelBookingSchema,
+  cancelRentalSchema,
+  createBookingSchema,
+  createRentalSchema,
   notificationPreferencesSchema,
   passwordChangeSchema,
   profileUpdateSchema,
+  rescheduleBookingSchema,
 } from '@bmd/shared';
+import {
+  cancel as cancelBooking,
+  create as createBooking,
+  detail as bookingDetail,
+  reschedule as rescheduleBooking,
+} from '../controllers/booking.controller.js';
+import {
+  cancel as cancelRental,
+  create as createRental,
+  detail as rentalDetail,
+} from '../controllers/rental.controller.js';
 import {
   bookings,
   changePassword,
@@ -27,7 +44,7 @@ import {
   updateNotificationPreferences,
   updateProfile,
 } from '../controllers/account.controller.js';
-import { requireAuth } from '../middleware/authenticate.js';
+import { requireAuth, requirePermission } from '../middleware/authenticate.js';
 import { strictRateLimiter } from '../middleware/rate-limit.js';
 import { validate } from '../middleware/validate.js';
 
@@ -57,6 +74,33 @@ meRouter.get(
   }),
   bookings,
 );
+// Making, reading and changing the caller's own bookings. The permission
+// checks are the API's; the client's own guards are only cosmetic.
+meRouter.post(
+  '/bookings',
+  requirePermission(PERMISSIONS.BOOKING_CREATE),
+  validate({ body: createBookingSchema }),
+  createBooking,
+);
+meRouter.get(
+  '/bookings/:id',
+  requirePermission(PERMISSIONS.BOOKING_READ_OWN),
+  validate({ params: idParams }),
+  bookingDetail,
+);
+meRouter.post(
+  '/bookings/:id/cancel',
+  requirePermission(PERMISSIONS.BOOKING_CANCEL_OWN),
+  validate({ params: idParams, body: cancelBookingSchema }),
+  cancelBooking,
+);
+meRouter.post(
+  '/bookings/:id/reschedule',
+  requirePermission(PERMISSIONS.BOOKING_UPDATE_OWN),
+  validate({ params: idParams, body: rescheduleBookingSchema }),
+  rescheduleBooking,
+);
+
 meRouter.get(
   '/rentals',
   validate({
@@ -64,6 +108,26 @@ meRouter.get(
   }),
   rentals,
 );
+// Requesting, reading and cancelling the caller's own equipment hires.
+meRouter.post(
+  '/rentals',
+  requirePermission(PERMISSIONS.RENTAL_CREATE),
+  validate({ body: createRentalSchema }),
+  createRental,
+);
+meRouter.get(
+  '/rentals/:id',
+  requirePermission(PERMISSIONS.RENTAL_READ_OWN),
+  validate({ params: idParams }),
+  rentalDetail,
+);
+meRouter.post(
+  '/rentals/:id/cancel',
+  requirePermission(PERMISSIONS.RENTAL_CANCEL_OWN),
+  validate({ params: idParams, body: cancelRentalSchema }),
+  cancelRental,
+);
+
 meRouter.get('/payments', validate({ query: pageQuery }), payments);
 meRouter.get('/deliverables', validate({ query: pageQuery }), deliverables);
 

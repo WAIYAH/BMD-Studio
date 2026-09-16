@@ -41,6 +41,8 @@ export interface PublicService {
   fromPriceCents: Cents;
   minDurationMinutes: number;
   maxDurationMinutes: number;
+  /** Sessions start, and lengthen, on this cadence. */
+  slotIntervalMinutes: number;
   requiresApproval: boolean;
   rooms: PublicServiceRoom[];
   packages: PublicPhotographyPackage[];
