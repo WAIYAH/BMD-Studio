@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Minus, Package, Plus } from 'lucide-react';
@@ -406,7 +406,7 @@ function HireSummary({
   );
 }
 
-function Row({ term, children }: { term: string; children: React.ReactNode }) {
+function Row({ term, children }: { term: string; children: ReactNode }) {
   return (
     <div className="flex justify-between gap-4">
       <dt className="text-ink-600">{term}</dt>

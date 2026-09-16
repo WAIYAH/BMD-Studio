@@ -43,10 +43,7 @@ const nextId = (prefix: string): string => {
 interface Fixtures {
   studioId: string;
   roomId: string;
-  otherRoomId: string;
   serviceId: string;
-  approvalServiceId: string;
-  packageServiceId: string;
   packageId: string;
 }
 
@@ -107,7 +104,8 @@ async function makeStudio(): Promise<Fixtures> {
     },
   });
 
-  const approvalService = await testDb.service.create({
+  // Reached by slug from the tests that need approval behaviour.
+  await testDb.service.create({
     data: {
       categoryId: category.id,
       name: 'Live Radio Slot',
@@ -159,10 +157,7 @@ async function makeStudio(): Promise<Fixtures> {
   return {
     studioId: studio.id,
     roomId: room.id,
-    otherRoomId: otherRoom.id,
     serviceId: service.id,
-    approvalServiceId: approvalService.id,
-    packageServiceId: packageService.id,
     packageId: portraitPackage.id,
   };
 }

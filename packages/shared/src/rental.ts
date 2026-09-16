@@ -27,8 +27,6 @@ export const hireWindowSchema = z
     path: ['to'],
   });
 
-export type HireWindow = z.output<typeof hireWindowSchema>;
-
 export const hireItemSchema = z.object({
   key: productKeySchema,
   quantity: quantitySchema,

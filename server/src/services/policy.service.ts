@@ -21,7 +21,7 @@ const POLICY_SETTINGS = {
  */
 const PAYMENT_HOLD_SETTING = { key: 'booking.payment_hold_minutes', max: 24 * 60 } as const;
 
-export const DEFAULT_PAYMENT_HOLD_MINUTES = 30;
+const DEFAULT_PAYMENT_HOLD_MINUTES = 30;
 
 /** The public figures plus the rules only the booking engine needs. */
 export interface BookingRules extends PublicBookingPolicy {

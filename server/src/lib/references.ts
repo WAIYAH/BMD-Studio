@@ -10,7 +10,7 @@ const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 const REFERENCE_LENGTH = 6;
 
 /** A customer-facing reference such as `BMD-7QF2K9`. */
-export function generateReference(prefix: string, length = REFERENCE_LENGTH): string {
+function generateReference(prefix: string, length = REFERENCE_LENGTH): string {
   let suffix = '';
   for (let index = 0; index < length; index += 1) {
     suffix += ALPHABET[randomInt(ALPHABET.length)];

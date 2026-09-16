@@ -57,7 +57,7 @@ const UNIT_SELECT = {
 
 type UnitRow = Prisma.EquipmentGetPayload<{ select: typeof UNIT_SELECT }>;
 
-export interface HireWindow {
+interface HireWindow {
   from: ZonedDay;
   to: ZonedDay;
   /** Opening time on the first day. */
@@ -84,7 +84,7 @@ function dayFromDate(date: string, timezone: string): ZonedDay {
  * Turns two calendar dates into the instants the equipment leaves and comes
  * back, using the studio's opening hours.
  */
-export async function resolveHireWindow(
+async function resolveHireWindow(
   client: DbClient,
   from: string,
   to: string,
@@ -187,7 +187,6 @@ async function unavailableUnitIds(
   client: DbClient,
   startsAt: Date,
   endsAt: Date,
-  options: { ignoreRentalId?: string } = {},
 ): Promise<Set<string>> {
   const [rented, underRepair] = await Promise.all([
     client.equipmentRentalItem.findMany({
@@ -195,7 +194,6 @@ async function unavailableUnitIds(
         rentalStatus: { in: OPEN },
         startsAt: { lt: endsAt },
         endsAt: { gt: startsAt },
-        ...(options.ignoreRentalId ? { rentalId: { not: options.ignoreRentalId } } : {}),
       },
       select: { equipmentId: true },
     }),

@@ -7,11 +7,14 @@
 
 ---
 
-## 1. Where things stand
+## 1. Where things stood when this plan was written (2026-09-15)
 
-The account area at `/account` is built and tested, but it can only **look**.
-Every page reads real rows, and every list is empty, because nothing lets a
-customer create those rows:
+This section is the starting position, kept as written. What is true _now_ is
+in the implementation record in §7.
+
+The account area at `/account` was built and tested, but it could only
+**look**. Every page read real rows, and every list was empty, because nothing
+let a customer create those rows:
 
 | A customer wants to…                  | Today                                             |
 | ------------------------------------- | ------------------------------------------------- |
@@ -33,8 +36,9 @@ What is already in place and is reused, not rebuilt:
   `equipment_rental_items_no_overlap`).
 - Studio settings for the cancellation window, advance-booking limit,
   deposit, late fee and VAT (`booking.*`, `rental.*`, `tax.*`).
-- Auth with per-request permissions, `requirePermission` (not yet used by any
-  route), the audit log, the in-process job runner, the account API and pages.
+- Auth with per-request permissions and `requirePermission`, which was written
+  but not yet used by any route, the audit log, the in-process job runner, and
+  the account API and pages.
 
 ## 2. What "finished" means
 
@@ -285,13 +289,25 @@ downloads, which need signed object-storage URLs (P9); reports (P14).
 
 ## 7. Implementation record
 
-| Phase                       | Status  | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| --------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A Booking engine            | TESTED  | Migration `20260916090000_booking_engine`; `/availability`, `/bookings/quote`, `/me/bookings` (create, detail, cancel, reschedule); pricing in `lib/pricing.ts`; slot logic in `availability.service.ts`; hold sweep in the scheduler. 27 booking tests and 9 pricing tests; 134 server tests pass. `requirePermission` now guards its first routes. Drift check: empty diff.                                                                                                                                         |
-| B Booking UI                | TESTED  | `/book` is a three-step flow whose state lives in the URL, so signing in returns to the slot already chosen; `/account/bookings/:id` with a cancel dialog that says what would be refunded, and `/account/bookings/:id/reschedule`; new `Dialog`, `SlotPicker` and `QuoteSummary`; list rows link through. `slotIntervalMinutes` added to the public catalogue so offered lengths match the server's grid. 104 client tests pass. A test caught the dialog stealing focus mid-typing; its focus handling was rebuilt. |
-| C Equipment hire            | PLANNED |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| D Payments                  | PLANNED |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| E Notifications             | PLANNED |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| F Email verification, reset | PLANNED |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| G Staff decisions API       | PLANNED |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| H Dashboard finish, release | PLANNED |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+**Where this stopped: phases A, B and C are done, tested and pushed**
+(`4d533d2`, `2af3bb7` on `feature/auth-and-dashboards`). A customer can find a
+free slot, see the price, book it, cancel or move it, and request an equipment
+hire — but cannot yet pay for any of it.
+
+**Next up is phase D, payments.** It needs the M-Pesa Daraja credentials in
+`server/.env` to run against the sandbox (`PAYMENTS_DRIVER=daraja`), and a
+public HTTPS callback URL through a tunnel; with `PAYMENTS_DRIVER=mock` it can
+be built and tested without either. Everything D needs from the API is already
+in place: bookings and hires carry their deposit, total and balance, and the
+payment tables and refund flow are already written to.
+
+| Phase                       | Status  | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A Booking engine            | TESTED  | Migration `20260916090000_booking_engine`; `/availability`, `/bookings/quote`, `/me/bookings` (create, detail, cancel, reschedule); pricing in `lib/pricing.ts`; slot logic in `availability.service.ts`; hold sweep in the scheduler. 27 booking tests and 9 pricing tests; 134 server tests pass. `requirePermission` now guards its first routes. Drift check: empty diff.                                                                                                                                                        |
+| B Booking UI                | TESTED  | `/book` is a three-step flow whose state lives in the URL, so signing in returns to the slot already chosen; `/account/bookings/:id` with a cancel dialog that says what would be refunded, and `/account/bookings/:id/reschedule`; new `Dialog`, `SlotPicker` and `QuoteSummary`; list rows link through. `slotIntervalMinutes` added to the public catalogue so offered lengths match the server's grid. 104 client tests pass. A test caught the dialog stealing focus mid-typing; its focus handling was rebuilt.                |
+| C Equipment hire            | TESTED  | Migration `20260916140000_equipment_hire` (a hire carries its own VAT; refundable deposits are never taxed). `GET /equipment/availability` and `POST /equipment/hire-quote` are public; `/me/rentals` request, detail and cancel are not. The server allocates units under an advisory lock per product, with `equipment_rental_items_no_overlap` as the backstop. New permission `rental:cancel:own`. Client: `/hire` and `/account/rentals/:id`, reached from the equipment catalogue. 149 server tests and 115 client tests pass. |
+| D Payments                  | PLANNED |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| E Notifications             | PLANNED |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| F Email verification, reset | PLANNED |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| G Staff decisions API       | PLANNED |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| H Dashboard finish, release | PLANNED |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |

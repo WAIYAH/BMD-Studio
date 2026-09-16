@@ -100,13 +100,13 @@ export async function loadBookingTarget(
   };
 }
 
-export interface BusyRange {
+interface BusyRange {
   start: Date;
   end: Date;
   reason: SlotBlockedReason;
 }
 
-export interface SlotPlan {
+interface SlotPlan {
   day: ZonedDay;
   timezone: string;
   openMinute: number;
@@ -129,7 +129,7 @@ const overlaps = (aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): boolean =
  * because the room must be free to be cleared afterwards; blackouts and
  * airings are compared against the session itself.
  */
-export function buildSlots(plan: SlotPlan): AvailabilitySlot[] {
+function buildSlots(plan: SlotPlan): AvailabilitySlot[] {
   const slots: AvailabilitySlot[] = [];
   const { day, timezone, durationMinutes, bufferMinutes } = plan;
 
