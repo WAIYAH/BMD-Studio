@@ -159,6 +159,31 @@ describe('AccountOverviewPage', () => {
     expect(screen.getByText('You’re all paid up')).toBeInTheDocument();
   });
 
+  it('tells a customer whose email is unconfirmed, without offering a link that cannot work', async () => {
+    vi.spyOn(accountApi, 'fetchDashboard').mockResolvedValue(EMPTY);
+    renderWithProviders(<AccountOverviewPage />);
+
+    const notice = await screen.findByRole('region', {
+      name: 'Your email address isn’t confirmed yet',
+    });
+    expect(notice).toHaveTextContent('wanjiku@example.test');
+    expect(within(notice).queryByRole('link')).not.toBeInTheDocument();
+    expect(within(notice).queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('shows no confirmation notice once the email is confirmed', async () => {
+    vi.spyOn(accountApi, 'fetchDashboard').mockResolvedValue({
+      ...EMPTY,
+      profile: { ...EMPTY.profile, emailVerified: true },
+    });
+    renderWithProviders(<AccountOverviewPage />);
+
+    expect(await screen.findByText('No upcoming sessions')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('region', { name: 'Your email address isn’t confirmed yet' }),
+    ).not.toBeInTheDocument();
+  });
+
   it('reports a failure with its reference', async () => {
     vi.spyOn(accountApi, 'fetchDashboard').mockRejectedValue(
       new ApiClientError('An unexpected error occurred.', {

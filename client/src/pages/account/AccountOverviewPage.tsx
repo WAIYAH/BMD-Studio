@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
@@ -5,6 +6,7 @@ import {
   CalendarDays,
   CreditCard,
   Images,
+  Mail,
   MapPin,
   Package,
   Plus,
@@ -80,12 +82,41 @@ export function AccountOverviewPage() {
   );
 }
 
+/**
+ * Email confirmation needs outbound mail, which is not built yet, so this says
+ * where things stand rather than offering a link that cannot work.
+ */
+function UnconfirmedEmailNotice({ email }: { email: string }) {
+  const titleId = useId();
+
+  return (
+    <section
+      aria-labelledby={titleId}
+      className="flex items-start gap-3 rounded-card border border-ink-200 bg-ink-50 px-5 py-4"
+    >
+      <Mail aria-hidden className="mt-0.5 size-5 shrink-0 text-brand-600" />
+      <div className="text-sm">
+        <h2 id={titleId} className="font-semibold text-ink-950">
+          Your email address isn’t confirmed yet
+        </h2>
+        <p className="mt-1 text-ink-600">
+          We haven’t confirmed <span className="font-semibold text-ink-900">{email}</span>. There’s
+          nothing you need to do for now — your account works as normal. To use a different address,
+          contact the studio.
+        </p>
+      </div>
+    </section>
+  );
+}
+
 function DashboardContent({ dashboard }: { dashboard: CustomerDashboard }) {
-  const { stats } = dashboard;
+  const { profile, stats } = dashboard;
   const owing = stats.balanceDueCents > 0;
 
   return (
     <>
+      {!profile.emailVerified && <UnconfirmedEmailNotice email={profile.email} />}
+
       <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <li>
           <StatCard

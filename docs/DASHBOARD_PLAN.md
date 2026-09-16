@@ -238,7 +238,47 @@ client/src/
 
 ## 10. Implementation record
 
-_Filled in when the work lands — see the bottom of this file._
+_Recorded 2026-09-15, against commit `97268ac` plus the unconfirmed-email
+notice on the overview._
+
+### 10.1 Checklist status
+
+| #   | Item                                 | Status      | Notes                                                                                                                                                                                                       |
+| --- | ------------------------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Env                                  | IMPLEMENTED | `JWT_ACCESS_SECRET` (at least 32 characters; the `.env.example` placeholder is refused in production), `JWT_ACCESS_TTL`, `REFRESH_TOKEN_TTL_DAYS`, `COOKIE_DOMAIN`, `COOKIE_SECURE`. CI sets a test secret. |
+| 2   | Server auth                          | TESTED      | `auth.service.ts`, `middleware/authenticate.ts`, `/auth` routes. `requirePermission` exists, but no route uses it yet, so nothing tests it.                                                                 |
+| 3   | Shared contracts                     | IMPLEMENTED | `packages/shared/src/auth.ts`, `dashboard.ts` (customer and admin DTOs), `account.ts`.                                                                                                                      |
+| 4   | `GET /me/dashboard`                  | TESTED      | `getCustomerDashboard` in `server/src/services/account.service.ts`.                                                                                                                                         |
+| 5   | `GET /admin/dashboard`               | PLANNED     | Only the DTOs in `dashboard.ts` exist. No route, service or test.                                                                                                                                           |
+| 6   | Integration and unit tests           | IN PROGRESS | `auth.test.ts` (11 tests) and `account.test.ts` (16 tests) pass. `dashboard.test.ts` (admin) and `unit/time.test.ts` are not written.                                                                       |
+| 7   | Client auth and login/register       | TESTED      | `AuthProvider`, `api-client` refresh, `RequireAuth`, `GuestOnly`, sign-in and sign-up pages. `RequirePermission` and role-based landing are not built (§10.2).                                              |
+| 8   | Shell and user dashboard             | TESTED      | `layouts/AccountLayout.tsx` and the seven `/account` pages.                                                                                                                                                 |
+| 9   | Admin dashboard                      | PLANNED     | Waits on item 5.                                                                                                                                                                                            |
+| 10  | Client tests, typecheck, lint, build | TESTED      | 93 client tests pass. Typecheck, lint and build are clean; the build warns that the single client bundle is over 500 kB, because nothing is code-split yet.                                                 |
+| 11  | plan.md / README status              | IMPLEMENTED | P3 and P12 both remain `IN PROGRESS` in plan.md §11.                                                                                                                                                        |
+
+### 10.2 Where the build differs from this plan
+
+- **Layout and folders.** `AccountLayout` serves `/account` only; there is no
+  shared `DashboardLayout`. The admin shell gets its own layout in P13. Client
+  code lives in `features/account/`, not `features/dashboard/`.
+- **More than one page.** Besides the overview, `/account` has Bookings,
+  Equipment hire, Payments, Deliverables, Notifications and Profile & security.
+  They use 14 more `/me` endpoints: paginated lists, notification read state,
+  profile, password change, signed-in devices and notification preferences.
+- **Profile block.** `profile` carries no `roles`. The client reads roles from
+  the auth session.
+- **Unread notifications.** Counted in `stats`, but shown as a badge in the
+  sidebar and header rather than as a fifth stat tile.
+- **Guards.** Only `RequireAuth` and `GuestOnly` exist. `RequirePermission` and
+  the 403 page arrive with `/admin`.
+- **Landing after sign-in.** Everyone returns to the page they came from, or to
+  `/account`. Sending `dashboard:view` holders to `/admin` waits until `/admin`
+  exists, as does the overview's link to the ops dashboard.
+- **Email verification.** An account with `emailVerified: false` sees a notice
+  on the overview saying the address is unconfirmed and that nothing is needed
+  from them. It offers no link, because there is no confirmation email to send
+  until P11.
 
 ### Out of scope here (tracked in plan.md)
 
